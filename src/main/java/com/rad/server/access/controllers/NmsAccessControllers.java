@@ -1,6 +1,8 @@
 package com.rad.server.access.controllers;
 
 import java.util.*;
+
+import com.rad.server.access.services.RoleService;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.stereotype.*;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +15,9 @@ import com.rad.server.access.repositories.*;
 @Controller
 public class NmsAccessControllers
 {
+	@Autowired
+	private RoleService roleService;
+
 	@Autowired
 	private UserRepository		userRepository;
 	
@@ -44,8 +49,10 @@ public class NmsAccessControllers
 	@ResponseBody
 	public List<Role> getRoles()
 	{
-		List<Role> roles = (List<Role>) roleRepository.findAll();
+		//List<Role> roles = (List<Role>) roleRepository.findAll();
+		List<Role> roles = roleService.getKeycloakRoles();
 		System.out.println("getRoles: " + roles);
+
 		return roles;
 	}
 
@@ -54,7 +61,8 @@ public class NmsAccessControllers
 	public Role addRole(@RequestBody Role role)
 	{
 		System.out.println("addRole: " + role);
-		roleRepository.save(role);
+		//roleRepository.save(role);
+		roleService.addKeycloakRole(role);
 		return role;
 	}
 	
