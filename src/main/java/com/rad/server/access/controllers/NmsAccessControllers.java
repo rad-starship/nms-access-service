@@ -3,6 +3,7 @@ package com.rad.server.access.controllers;
 import java.util.*;
 
 import com.rad.server.access.services.RoleService;
+import com.rad.server.access.services.UserService;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.stereotype.*;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,9 @@ public class NmsAccessControllers
 	private RoleService roleService;
 
 	@Autowired
+	private UserService userService;
+
+	@Autowired
 	private UserRepository		userRepository;
 	
 	@Autowired
@@ -31,7 +35,7 @@ public class NmsAccessControllers
 	@ResponseBody
 	public List<User> getUsers()
 	{
-		List<User> users = (List<User>) userRepository.findAll();
+		List<User> users =(List<User>) userRepository.findAll();
 		System.out.println("getUsers: " + users);
 		return users;
 	}
@@ -42,7 +46,25 @@ public class NmsAccessControllers
 	{
 		System.out.println("addUser: " + user);
 		userRepository.save(user);
+		userService.addKeycloakUser(user);
 		return user;
+	}
+
+	@DeleteMapping("/users/{id}")
+	@ResponseBody
+	public User deleteUser(@PathVariable long id){
+		User user;
+		Optional<User> userExists=userRepository.findById(id);
+		if(userExists.isPresent()) {
+			user = userExists.get();
+			userRepository.delete(user);
+			userService.deleteKeycloakUser(id);
+			System.out.println("User deleted successfully.");
+			return user;
+		}
+		else
+			System.out.println("The user doesnt exist.");
+		return null;
 	}
 	
 	@GetMapping("/roles")

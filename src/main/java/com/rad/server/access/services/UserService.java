@@ -17,4 +17,8 @@ import java.util.List;
 public interface UserService
 {
     void addKeycloakUser(User user);
+
+    List<User> getKeycloakUsers();
+
+    void deleteKeycloakUser(long id);
 }

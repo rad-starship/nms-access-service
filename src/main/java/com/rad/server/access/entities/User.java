@@ -8,8 +8,10 @@ public class User
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Id
 	private long	id;
-	private String	name;
+	private String	firstName;
+	private String	lastName;
 	private String	email;
+	private String	userName;
 
 
 	public User()
@@ -18,14 +20,17 @@ public class User
 	}
 	
 	/**
-	 * @param id
-	 * @param name
+	 * @param firstName
+	 * @param lastName
 	 * @param email
+	 * @param userName
 	 */
-	public User(String name, String email)
+	public User(String firstName,String lastName, String email,String userName)
 	{
-		this.name = name;
+		this.firstName = firstName;
+		this.lastName=lastName;
 		this.email = email;
+		this.userName=userName;
 	}
 
 	public long getId()
@@ -38,9 +43,17 @@ public class User
 		this.id = id;
 	}
 
-	public String getName()
+	public String getFirstName()
 	{
-		return this.name;
+		return this.firstName;
+	}
+
+	public String getLastName() {
+		return lastName;
+	}
+
+	public String getUserName() {
+		return userName;
 	}
 
 	public String getEmail()
@@ -51,6 +64,6 @@ public class User
 	@Override
 	public String toString()
 	{
-		return "User [id=" + this.id + ", name=" + this.name + ", email=" + this.email + "]";
+		return "User [id=" + this.id + ", name=" + this.firstName+" "+this.lastName + ", email=" + this.email + "]";
 	}
 }

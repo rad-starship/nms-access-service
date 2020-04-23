@@ -20,8 +20,8 @@ public class RoleServiceImpl implements RoleService {
         Keycloak keycloak = Keycloak.getInstance(
                 "http://localhost:8080/auth",// keycloak address
                 "master", // ​​specify Realm master
-                "amirloe", // ​​administrator account
-                "aM1rl994", // ​​administrator password
+                "avielavitan", // ​​administrator account
+                "aviel5002", // ​​administrator password
                 "admin-cli");
         RealmResource relamResource = keycloak.realm("Admin");
         RolesResource roles =  relamResource.roles();

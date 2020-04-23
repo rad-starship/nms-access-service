@@ -52,7 +52,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	{
 		return args -> {
 			Stream.of("John", "Julie", "Jennifer", "Helen", "Rachel").forEach(name -> {
-				User user = new User(name, name.toLowerCase() + "@domain.com");
+				User user = new User(name,name,name.toLowerCase() + "@domain.com",name);
 				userRepository.save(user);
 			});
 			userRepository.findAll().forEach(System.out::println);
