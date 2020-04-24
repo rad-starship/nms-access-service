@@ -46,4 +46,8 @@ public class Role
 	{
 		return "Role [id=" + this.id + ", name=" + this.name + "]";
 	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
 }

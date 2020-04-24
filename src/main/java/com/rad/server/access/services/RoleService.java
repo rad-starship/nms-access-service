@@ -22,4 +22,6 @@ public interface RoleService
     void deleteRole(Role role);
 
     void deleteRole(long roleId);
+
+    Role updateRole(Long roleId, Role roleDetailes);
 }
