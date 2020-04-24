@@ -77,6 +77,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	/**
 	 * Populate the database with a few User entities
 	 */
+	/*
 	@Bean
 	CommandLineRunner roleInit(RoleRepository repository)
 	{
@@ -87,5 +88,5 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 			});
 			repository.findAll().forEach(System.out::println);
 		};
-	}	
+	}*/
 }
