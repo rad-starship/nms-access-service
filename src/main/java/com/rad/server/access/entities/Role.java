@@ -8,6 +8,7 @@ public class Role
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Id
 	private long	id;
+	private String kcId;
 	private String	name;
 
 	public Role()
@@ -15,8 +16,13 @@ public class Role
 		
 	}
 	
-	public Role(String name)
+	public Role(String id,String name)
 	{
+		this.kcId = id;
+		this.name = name;
+	}
+
+	public Role(String name) {
 		this.name = name;
 	}
 
@@ -38,6 +44,6 @@ public class Role
 	@Override
 	public String toString()
 	{
-		return "User [id=" + this.id + ", name=" + this.name + "]";
+		return "Role [id=" + this.id + ", name=" + this.name + "]";
 	}
 }
