@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import com.rad.server.access.entities.*;
 import com.rad.server.access.repositories.*;
 
+import javax.validation.Valid;
 import javax.ws.rs.NotFoundException;
 
 /**
@@ -68,6 +69,17 @@ public class NmsAccessControllers
 	}
 
 
+	@PutMapping("/roles/{id}")
+	@ResponseBody
+	public Role updateRole(@PathVariable(value = "id") Long roleId,
+												   @Valid @RequestBody Role roleDetailes) {
+		try {
+			return roleService.updateRole(roleId, roleDetailes);
+		}
+			catch(Exception e){
+			return new Role("NotFound");
+		}
+	}
 
 	@DeleteMapping("/roles/{name}")
 	@ResponseBody

@@ -4,6 +4,7 @@ import com.rad.server.access.entities.Role;
 import com.rad.server.access.repositories.RoleRepository;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.RoleResource;
 import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,6 +111,29 @@ public class RoleServiceImpl implements RoleService {
                     .orElseThrow(() -> new NotFoundException());
            deleteKeycloakRole(role);
            roleRepository.delete(role);
+    }
+
+    @Override
+    public Role updateRole(Long roleId, Role roleDetailes) {
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new NotFoundException());
+        updateKeycloakRole(role,roleDetailes);
+        final Role updatedRole = updateRepo(roleDetailes, role);
+        return updatedRole;
+    }
+
+    private Role updateRepo(Role newRole, Role oldRole) {
+        oldRole.setName(newRole.getName());
+        return roleRepository.save(oldRole);
+    }
+
+    private void updateKeycloakRole(Role role,Role update) {
+        RealmResource relamResource = keycloak.realm("Admin");
+        RolesResource roles =  relamResource.roles();
+        RoleResource beforeRole  = roles.get(role.getName());
+        RoleRepresentation newRep = new RoleRepresentation();
+        newRep.setName(update.getName());
+        beforeRole.update(newRep);
     }
 
 
