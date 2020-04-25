@@ -20,5 +20,5 @@ public interface UserService
 
     List<User> getKeycloakUsers();
 
-    void deleteKeycloakUser(long id);
+    void deleteKeycloakUser(String id);
 }
