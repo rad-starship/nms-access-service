@@ -60,7 +60,7 @@ public class NmsAccessControllers
 		if(userExists.isPresent()) {
 			user = userExists.get();
 			userRepository.delete(user);
-			userService.deleteKeycloakUser(id);
+			userService.deleteKeycloakUser(user.getUserName());
 			System.out.println("User deleted successfully.");
 			return user;
 		}
