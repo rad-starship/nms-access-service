@@ -5,6 +5,7 @@ import com.rad.server.access.entities.User;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.RolesResource;
+import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -69,6 +70,18 @@ public class UserServiceImpl implements UserService {
 
         System.out.printf("Repsonse: %s %s%n", response.getStatus(), response.getStatusInfo());
 
+    }
+
+    public void updateKeycloakUser(User user ,String userName){
+        Keycloak keycloak=getKeycloakInstance();
+        RealmResource realmResource = keycloak.realm("Admin");
+        UsersResource users =  realmResource.users();
+        UserRepresentation userRep=users.search(userName).get(0);
+        userRep.setEmail(user.getEmail());
+        userRep.setFirstName(user.getFirstName());
+        userRep.setLastName(user.getLastName());
+        UserResource updateUser=users.get(userRep.getId());
+        updateUser.update(userRep);
     }
 
     public UserRepresentation getUserRepFromList(List<UserRepresentation> urList,String user){

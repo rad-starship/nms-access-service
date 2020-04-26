@@ -33,6 +33,12 @@ public class User
 		this.userName=userName;
 	}
 
+	public User(User user){
+		this.firstName=user.firstName;
+		this.lastName=user.lastName;
+		this.email=user.email;
+	}
+
 	public long getId()
 	{
 		return this.id;
@@ -50,6 +56,22 @@ public class User
 
 	public String getLastName() {
 		return lastName;
+	}
+
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
+
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
 	}
 
 	public String getUserName() {
