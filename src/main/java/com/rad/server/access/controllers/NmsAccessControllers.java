@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.*;
 import com.rad.server.access.entities.*;
 import com.rad.server.access.repositories.*;
 
+import javax.validation.Valid;
+import javax.ws.rs.NotFoundException;
+
 /**
  * @author raz_o
  */
@@ -25,8 +28,7 @@ public class NmsAccessControllers
 	@Autowired
 	private UserRepository		userRepository;
 	
-	@Autowired
-	private RoleRepository		roleRepository;
+
 	
 	@Autowired
 	private TenantRepository	tenantRepository;
@@ -85,7 +87,7 @@ public class NmsAccessControllers
 	public List<Role> getRoles()
 	{
 		//List<Role> roles = (List<Role>) roleRepository.findAll();
-		List<Role> roles = roleService.getKeycloakRoles();
+		List<Role> roles = roleService.getRoles();
 		System.out.println("getRoles: " + roles);
 
 		return roles;
@@ -97,9 +99,57 @@ public class NmsAccessControllers
 	{
 		System.out.println("addRole: " + role);
 		//roleRepository.save(role);
-		roleService.addKeycloakRole(role);
+		roleService.addRole(role);
 		return role;
 	}
+
+
+	@PutMapping("/roles/{id}")
+	@ResponseBody
+	public Role updateRole(@PathVariable(value = "id") Long roleId,
+												   @Valid @RequestBody Role roleDetailes) {
+		try {
+			return roleService.updateRole(roleId, roleDetailes);
+		}
+			catch(Exception e){
+			return new Role("NotFound");
+		}
+	}
+
+	@DeleteMapping("/roles/{name}")
+	@ResponseBody
+	public Map<String, Boolean> deleteRole(@PathVariable(value = "name") String roleName){
+	Map<String, Boolean> response = new HashMap<>();
+	System.out.println("DeleteRole: " + roleName);
+	try {
+		roleService.deleteRole(new Role(roleName));
+		response.put("deleted", Boolean.TRUE);
+	}
+	catch(NotFoundException e){
+		response.put("deleted",Boolean.FALSE);
+	}
+
+	return response;
+
+}
+
+	@DeleteMapping("/rolesid/{id}")
+	@ResponseBody
+	public Map<String, Boolean> deleteRole(@PathVariable(value = "id") long roleId){
+		Map<String, Boolean> response = new HashMap<>();
+		System.out.println("DeleteRole: " + roleId);
+		try {
+			roleService.deleteRole(roleId);
+			response.put("deleted", Boolean.TRUE);
+		}
+		catch(NotFoundException e){
+			response.put("deleted",Boolean.FALSE);
+		}
+
+		return response;
+
+	}
+
 	
 	@GetMapping("/tenants")
 	@ResponseBody
@@ -114,7 +164,7 @@ public class NmsAccessControllers
 	@ResponseBody
 	public Tenant addTenant(@RequestBody Tenant tenant)
 	{
-		System.out.println("addRole: " + tenant);
+		System.out.println("addTenant: " + tenant);
 		tenantRepository.save(tenant);
 		return tenant;
 	}

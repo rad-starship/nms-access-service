@@ -15,7 +15,13 @@ import java.util.List;
 @Service
 public interface RoleService
 {
-    List<Role> getKeycloakRoles();
+    List<Role> getRoles();
 
-    void addKeycloakRole(Role role);
+    void addRole(Role role);
+
+    void deleteRole(Role role);
+
+    void deleteRole(long roleId);
+
+    Role updateRole(Long roleId, Role roleDetailes);
 }
