@@ -56,9 +56,8 @@ public class NmsAccessControllers
 	@ResponseBody
 	public User deleteUser(@PathVariable long id){
 		User user;
-		Optional<User> userExists=userRepository.findById(id);
-		if(userExists.isPresent()) {
-			user = userExists.get();
+		user=getUserFromRepository(id);
+		if(user!=null) {
 			userRepository.delete(user);
 			userService.deleteKeycloakUser(user.getUserName());
 			System.out.println("User deleted successfully.");
@@ -67,6 +66,20 @@ public class NmsAccessControllers
 		else
 			System.out.println("The user doesnt exist.");
 		return null;
+	}
+
+	@PutMapping("/users/{id}")
+	@ResponseBody
+	public User updateUser(@PathVariable long id,@RequestBody User user){
+		User oldUser=getUserFromRepository(id);
+		if(oldUser==null)
+			return null;
+		User newUser=new User(user);
+		newUser.setId(id);
+		newUser.setUserName(oldUser.getUserName());
+		userService.updateKeycloakUser(user,oldUser.getUserName());
+		userRepository.save(newUser);
+		return user;
 	}
 	
 	@GetMapping("/roles")
@@ -154,5 +167,10 @@ public class NmsAccessControllers
 		System.out.println("addTenant: " + tenant);
 		tenantRepository.save(tenant);
 		return tenant;
+	}
+
+	private User getUserFromRepository(long id) {
+		Optional<User> userExists = userRepository.findById(id);
+		return userExists.orElse(null);
 	}
 }
