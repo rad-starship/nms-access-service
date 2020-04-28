@@ -22,12 +22,10 @@ import java.util.stream.Stream;
 public class RoleServiceImpl implements RoleService {
 
     @Autowired
-    private KeycloakAdminProperties prop;
-
-
-    @Autowired
     private RoleRepository roleRepository;
 
+    @Autowired
+    private KeycloakAdminProperties prop;
 
 
     private Keycloak getKeycloak() {
@@ -42,7 +40,7 @@ public class RoleServiceImpl implements RoleService {
 
     //Overridable CRUD functions:
     @Override
-    public List<Role> getRoles() {
+    public  List<Role> getRoles() {
          getKeycloakRoles();
          return (List<Role>) roleRepository.findAll();
     }
@@ -97,7 +95,7 @@ public class RoleServiceImpl implements RoleService {
         return null;
     }
 
-    private boolean haveInRepo(Role newRole) {
+    private  boolean  haveInRepo(Role newRole) {
         List<Role> repo = (List<Role>) roleRepository.findAll();
         for(Role r : repo){
             if (r.getName().equals(newRole.getName()))
@@ -113,15 +111,17 @@ public class RoleServiceImpl implements RoleService {
     }
 
     //Keycloack CRUD functions
-    public void getKeycloakRoles() {
+    public  void getKeycloakRoles() {
         Keycloak keycloak = getKeycloak();
         RealmResource relamResource = keycloak.realm("Admin");
         RolesResource roles =  relamResource.roles();
         roles.list().forEach(role->
         {
             Role newRole = new Role(role.getId(), role.getName());
-            if(!haveInRepo(newRole))
-                roleRepository.save(newRole);
+            synchronized(this) {
+                if (!haveInRepo(newRole))
+                    roleRepository.save(newRole);
+            }
         });
     }
 
