@@ -1,5 +1,6 @@
 package com.rad.server.access.services;
 
+import com.rad.server.access.componenets.KeycloakAdminProperties;
 import com.rad.server.access.entities.Role;
 import com.rad.server.access.entities.User;
 import org.keycloak.admin.client.Keycloak;
@@ -7,8 +8,10 @@ import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.websocket.OnClose;
@@ -22,16 +25,17 @@ import java.util.stream.Stream;
 @Service
 public class UserServiceImpl implements UserService {
 
-
+    @Autowired
+    private KeycloakAdminProperties prop;
 
     private Keycloak getKeycloakInstance(){
-        Keycloak keycloak = Keycloak.getInstance(
-                "http://localhost:8080/auth",// keycloak address
-                "master", // ​​specify Realm master
-                "avielavitan", // ​​administrator account
-                "aviel5002", // ​​administrator password
-                "admin-cli");
-        return keycloak;
+        return Keycloak.getInstance(
+
+                prop.getServerUrl(),// keycloak address
+                prop.getRelm(), // ​​specify Realm master
+                prop.getUsername(), // ​​administrator account
+                prop.getPassword(), // ​​administrator password
+                prop.getCliendId());
     }
 
     @Override

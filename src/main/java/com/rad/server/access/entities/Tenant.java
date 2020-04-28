@@ -3,6 +3,8 @@
  */
 package com.rad.server.access.entities;
 
+import org.hibernate.validator.constraints.UniqueElements;
+
 import javax.persistence.*;
 
 /**
@@ -15,6 +17,7 @@ public class Tenant
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Id
 	private long	id;
+	@Column(unique = true)
 	private String	name;
 
 	public Tenant()
