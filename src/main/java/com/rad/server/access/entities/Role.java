@@ -1,6 +1,8 @@
 package com.rad.server.access.entities;
 
 import javax.persistence.*;
+import java.util.LinkedList;
+import java.util.List;
 
 @Entity
 public class Role 
@@ -11,6 +13,10 @@ public class Role
 	private String kcId;
 	private String	name;
 
+
+	@ElementCollection
+    private List<String> permissions;
+
 	public Role()
 	{
 		
@@ -20,10 +26,12 @@ public class Role
 	{
 		this.kcId = id;
 		this.name = name;
+		permissions = new LinkedList<>();
 	}
 
 	public Role(String name) {
 		this.name = name;
+		permissions = new LinkedList<>();
 	}
 
 	public long getId()
@@ -44,10 +52,19 @@ public class Role
 	@Override
 	public String toString()
 	{
-		return "Role [id=" + this.id + ", name=" + this.name + "]";
+		return "Role [id=" + this.id + ", name=" + this.name +"]";
 	}
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+
+	public List<String> getPermissions() {
+		return permissions;
+	}
+
+	public void addPermission(List<String> permissions){
+		this.permissions = permissions;
 	}
 }
