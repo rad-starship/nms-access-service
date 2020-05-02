@@ -2,6 +2,8 @@ package com.rad.server.access;
 
 import java.net.*;
 import java.util.stream.*;
+
+import com.rad.server.access.services.TenantService;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
@@ -63,14 +65,15 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	 * Populate the database with a few User entities
 	 */
 	@Bean
-	CommandLineRunner tenantInit(TenantRepository repository)
+	CommandLineRunner tenantInit(TenantRepository repository, TenantService tenantService)
 	{
 		return args -> {
-			Stream.of("Admin", "America", "Europe", "Asia", "Africa").forEach(name -> {
+			Stream.of("Admin", "America", "Europe", "Asia", "Africa","All").forEach(name -> {
 				Tenant t = new Tenant(name);
 				repository.save(t);
 			});
 			repository.findAll().forEach(System.out::println);
+			tenantService.initKeycloakTenants(repository);
 		};
 	}	
 	

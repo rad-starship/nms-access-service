@@ -3,13 +3,17 @@ package com.rad.server.access.services;
 import com.rad.server.access.componenets.KeycloakAdminProperties;
 import com.rad.server.access.entities.Tenant;
 import com.rad.server.access.entities.User;
+import com.rad.server.access.repositories.TenantRepository;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 @Service
@@ -17,6 +21,7 @@ public class TenantServiceImpl implements TenantService {
 
     @Autowired
     private KeycloakAdminProperties prop;
+
 
     private Keycloak getKeycloakInstance(){
         return Keycloak.getInstance(
@@ -53,5 +58,42 @@ public class TenantServiceImpl implements TenantService {
         RealmRepresentation realm=new RealmRepresentation();
         realm.setRealm(tenant.getName());
         keycloak.realms().realm(name).update(realm);
+    }
+
+    @Override
+    public boolean tenantExists(Tenant tenant){
+        Keycloak keycloak=getKeycloakInstance();
+        RealmsResource realms=keycloak.realms();
+        List<RealmRepresentation> existingRealms=realms.findAll();
+        for (RealmRepresentation r:existingRealms) {
+            if(r.getRealm().equals(tenant.getName()))
+                return true;
+        }
+        return false;
+    }
+
+    public void initKeycloakTenants(TenantRepository repository){
+        Keycloak keycloak=getKeycloakInstance();
+        for (Tenant t:repository.findAll()) {
+            if(!tenantExists(t))
+                addKeycloakTenant(t);
+        }
+        for(RealmRepresentation r:keycloak.realms().findAll()){
+            if(r.getRealm().equals("master"))
+                continue;
+            boolean exists=false;
+            for(Tenant t:repository.findAll()){
+                if(t.getName().equals(r.getRealm()))
+                    exists=true;
+            }
+            if(exists)
+                continue;
+            else{
+                Tenant newTenant=new Tenant(r.getRealm());
+                repository.save(newTenant);
+            }
+        }
+
+
     }
 }
