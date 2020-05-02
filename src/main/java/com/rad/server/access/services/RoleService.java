@@ -17,6 +17,8 @@ public interface RoleService
 {
     List<Role> getRoles();
 
+    void initRole(Role role);
+
     void addRole(Role role);
 
     void deleteRole(Role role);

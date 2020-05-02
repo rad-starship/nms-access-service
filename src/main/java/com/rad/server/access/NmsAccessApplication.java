@@ -1,9 +1,15 @@
 package com.rad.server.access;
 
 import java.net.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.*;
 
 import com.rad.server.access.services.TenantService;
+
+import com.rad.server.access.services.RoleService;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
@@ -80,16 +86,46 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	/**
 	 * Populate the database with a few User entities
 	 */
-	/*
+
 	@Bean
-	CommandLineRunner roleInit(RoleRepository repository)
+	CommandLineRunner roleInit(RoleRepository repository, RoleService service)
 	{
 		return args -> {
-			Stream.of("Admin", "ReginAdmin", "User").forEach(name -> {
-				Role t = new Role(name);
-				repository.save(t);
-			});
-			repository.findAll().forEach(System.out::println);
+       //First init the permissions
+
+            Stream.of("all","user_write","user_read","role_write","role_read","tenant_write","tenant_read","corona_read").forEach(name -> {
+                Role t = new Role(name);
+                service.initRole(t);
+            });
+            //Now create the default roles
+			Role admin = new Role("Admin");
+			List<String> adminPermission = new LinkedList<>();
+			adminPermission.add("all");
+			admin.addPermission(adminPermission);
+			service.initRole(admin);
+
+            Role regionAdmin = new Role("Region-Admin");
+            List<String> rAdminPermission = new LinkedList<>();
+            rAdminPermission.add("user_write");
+            rAdminPermission.add("user_read");
+            rAdminPermission.add("role_write");
+            rAdminPermission.add("role_read");
+            rAdminPermission.add("tenant_read");
+            rAdminPermission.add("corona_read");
+            regionAdmin.addPermission(rAdminPermission);
+            service.initRole(regionAdmin);
+
+            Role user = new Role("User");
+            List<String> userPermission = new LinkedList<>();
+            userPermission.add("corona_read");
+            userPermission.add("user_read");
+            user.addPermission(userPermission);
+            service.initRole(user);
+
+
+
+
+            repository.findAll().forEach(System.out::println);
 		};
-	}*/
+	}
 }

@@ -14,8 +14,11 @@ import org.springframework.stereotype.Service;
 import javax.websocket.OnClose;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.NotFoundException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -42,7 +45,29 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public  List<Role> getRoles() {
          getKeycloakRoles();
-         return (List<Role>) roleRepository.findAll();
+         return getComposites();
+    }
+
+    @Override
+    public void initRole(Role role) {
+        Role r =roleRepository.save(role);
+        try{
+            addKeycloakRole(role);
+        }
+        catch(Exception e){
+            System.out.println(e.getMessage());
+        }
+
+    }
+
+    private List<Role> getComposites() {
+        List<Role> output = new LinkedList<>();
+        for (Role role :roleRepository.findAll()){
+            if (role.getPermissions().size()>0){
+                output.add(role);
+            }
+        }
+        return output;
     }
 
     @Override
@@ -107,6 +132,7 @@ public class RoleServiceImpl implements RoleService {
     //Update data in repo
     private Role updateRepo(Role newRole, Role oldRole) {
         oldRole.setName(newRole.getName());
+        oldRole.addPermission(newRole.getPermissions());
         return roleRepository.save(oldRole);
     }
 
@@ -117,7 +143,17 @@ public class RoleServiceImpl implements RoleService {
         RolesResource roles =  relamResource.roles();
         roles.list().forEach(role->
         {
+
             Role newRole = new Role(role.getId(), role.getName());
+            if(role.isComposite()){
+                List<String> permissions = new LinkedList<>();
+                for (RoleRepresentation permission :roles.get(role.getName()).getRoleComposites()){
+                   // Role compositeRole = new Role(permission.getId(),permission.getName());
+                   // compositeRole = findInRepo(compositeRole);
+                    permissions.add(permission.getName());
+                }
+                newRole.addPermission(permissions);
+            }
             synchronized(this) {
                 if (!haveInRepo(newRole))
                     roleRepository.save(newRole);
@@ -129,9 +165,30 @@ public class RoleServiceImpl implements RoleService {
         Keycloak keycloak = getKeycloak();
         RealmResource realmResource = keycloak.realm("Admin");
         RoleRepresentation newRole = new RoleRepresentation();
-        newRole.setName(role.getName());
+        try {
+            List<RoleRepresentation> permissions = getPermissions(role.getPermissions());
+            newRole.setName(role.getName());
+            realmResource.roles().create(newRole);
+            if (permissions.size()>0) {
+                realmResource.roles().get(role.getName()).toRepresentation().setComposite(true);
+                realmResource.roles().get(role.getName()).addComposites(permissions);
+            }
+        }
+        catch (Exception e){
+            System.out.println("An error Happen");
+        }
 
-        realmResource.roles().create(newRole);
+    }
+
+    private List<RoleRepresentation> getPermissions(List<String> permissions) {
+        Keycloak keycloak = getKeycloak();
+        RealmResource relamResource = keycloak.realm("Admin");
+        List<RoleRepresentation> output = new LinkedList<>();
+        for (String r : permissions){
+            RoleRepresentation role = relamResource.roles().get(r).toRepresentation();
+            output.add(role);
+        }
+        return output;
     }
 
     private void updateKeycloakRole(Role role,Role update) {
@@ -141,7 +198,16 @@ public class RoleServiceImpl implements RoleService {
         RoleResource beforeRole  = roles.get(role.getName());
         RoleRepresentation newRep = new RoleRepresentation();
         newRep.setName(update.getName());
+
+        List<RoleRepresentation> oldComposites = new ArrayList<>(beforeRole.getRoleComposites());
+        List<RoleRepresentation> newComposites = getPermissions(update.getPermissions());
+
         beforeRole.update(newRep);
+        if(!oldComposites.isEmpty())
+            beforeRole.deleteComposites(oldComposites);
+        beforeRole.addComposites(newComposites);
+
+
     }
 
     private void deleteKeycloakRole(Role role) {
