@@ -22,23 +22,12 @@ import java.util.stream.Stream;
 @Service
 public class UserServiceImpl implements UserService {
 
-    @Autowired
-    private KeycloakAdminProperties prop;
-
-    private Keycloak getKeycloakInstance(){
-        return Keycloak.getInstance(
-
-                prop.getServerUrl(),// keycloak address
-                prop.getRelm(), // ​​specify Realm master
-                prop.getUsername(), // ​​administrator account
-                prop.getPassword(), // ​​administrator password
-                prop.getCliendId());
-    }
+    public GeneralService generalService=new GeneralServiceImpl();
 
     @Override
     public List<User> getKeycloakUsers() {
         List<User> output = new LinkedList<>();
-        Keycloak keycloak = getKeycloakInstance();
+        Keycloak keycloak = generalService.getKeycloakInstance();
         RealmResource realmResource = keycloak.realm("Admin");
         UsersResource users =  realmResource.users();
         users.list().forEach(user->output.add(new User(user.getFirstName(),user.getLastName(),user.getEmail(),user.getUsername())));
@@ -47,7 +36,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteKeycloakUser(String userName,String tenant){
-        Keycloak keycloak=getKeycloakInstance();
+        Keycloak keycloak = generalService.getKeycloakInstance();
         RealmResource realmResource = keycloak.realm(tenant);
         UsersResource users =  realmResource.users();
         users.delete(users.search(userName).get(0).getId());
@@ -55,7 +44,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void addKeycloakUser(User user,String tenant,String role) {
-        Keycloak keycloak = getKeycloakInstance();
+        Keycloak keycloak = generalService.getKeycloakInstance();
         UserRepresentation userRep= new UserRepresentation();
         userRep.setEnabled(true);
         userRep.setUsername(user.getUserName());
@@ -84,7 +73,7 @@ public class UserServiceImpl implements UserService {
     }
 
     public void updateKeycloakUser(User user ,String userName){
-        Keycloak keycloak=getKeycloakInstance();
+        Keycloak keycloak = generalService.getKeycloakInstance();
         RealmResource realmResource = keycloak.realm("Admin");
         UsersResource users =  realmResource.users();
         UserRepresentation userRep=users.search(userName).get(0);
@@ -95,13 +84,6 @@ public class UserServiceImpl implements UserService {
         updateUser.update(userRep);
     }
 
-    public UserRepresentation getUserRepFromList(List<UserRepresentation> urList,String user){
-        for (UserRepresentation ur: urList) {
-            if(ur.getUsername().equals(user))
-                return ur;
-        }
-        return null;
-    }
 
 
 }
