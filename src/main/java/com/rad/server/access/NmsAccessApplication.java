@@ -10,6 +10,7 @@ import java.util.stream.*;
 import com.rad.server.access.services.TenantService;
 
 import com.rad.server.access.services.RoleService;
+import com.rad.server.access.services.UserService;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
@@ -52,20 +53,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 		}
 	}
 	
-	/**
-	 * Populate the database with a few User entities
-	 */
-	@Bean
-	CommandLineRunner userInit(UserRepository userRepository)
-	{
-		return args -> {
-			Stream.of("John", "Julie", "Jennifer", "Helen", "Rachel").forEach(name -> {
-				User user = new User(name,name,name.toLowerCase() + "@domain.com",name);
-				userRepository.save(user);
-			});
-			userRepository.findAll().forEach(System.out::println);
-		};
-	}
+
 	
 	/**
 	 * Populate the database with a few User entities
@@ -88,21 +76,21 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	 */
 
 	@Bean
-	CommandLineRunner roleInit(RoleRepository repository, RoleService service)
+	CommandLineRunner roleInit(RoleRepository repository, RoleService roleService)
 	{
 		return args -> {
        //First init the permissions
 
             Stream.of("all","user_write","user_read","role_write","role_read","tenant_write","tenant_read","corona_read").forEach(name -> {
                 Role t = new Role(name);
-                service.initRole(t);
-            });
+                roleService.initRole(t);
+            });// to talk to amir about that
             //Now create the default roles
 			Role admin = new Role("Admin");
 			List<String> adminPermission = new LinkedList<>();
 			adminPermission.add("all");
 			admin.addPermission(adminPermission);
-			service.initRole(admin);
+			roleService.initRole(admin);
 
             Role regionAdmin = new Role("Region-Admin");
             List<String> rAdminPermission = new LinkedList<>();
@@ -113,19 +101,75 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
             rAdminPermission.add("tenant_read");
             rAdminPermission.add("corona_read");
             regionAdmin.addPermission(rAdminPermission);
-            service.initRole(regionAdmin);
+            roleService.initRole(regionAdmin);
 
             Role user = new Role("User");
             List<String> userPermission = new LinkedList<>();
             userPermission.add("corona_read");
             userPermission.add("user_read");
             user.addPermission(userPermission);
-            service.initRole(user);
+            roleService.initRole(user);
 
 
 
 
             repository.findAll().forEach(System.out::println);
+		};
+	}
+
+	/**
+	 * Populate the database with a few User entities
+	 */
+	@Bean
+	CommandLineRunner userInit(UserRepository userRepository,UserService userService)
+	{
+		return args -> {
+			Stream.of("John", "Julie", "Jennifer", "Helen", "Rachel").forEach(name -> {
+				User user = new User(name,name,name.toLowerCase() + "@domain.com",name);
+				userRepository.save(user);
+			});
+			userRepository.findAll().forEach(System.out::println);
+		};
+	}
+
+	@Bean
+	CommandLineRunner adminInit(UserRepository userRepository, UserService userService)
+	{
+		return args -> {
+			Stream.of("Admin").forEach(name -> {
+				User user = new User(name,name,name.toLowerCase() + "@domain.com","admin",20,6);
+				userRepository.save(user);
+				userService.addKeycloakUser(user,"Admin","Admin");
+			});
+			userRepository.findAll().forEach(System.out::println);
+		};
+	}
+	@Bean
+	CommandLineRunner regionAdminInit(UserRepository userRepository, UserService userService)
+	{
+		return args -> {
+			Stream.of("americaAdmin","europeAdmin","asiaAdmin","africaAdmin").forEach(name -> {
+				User user;
+				if(name.contains("america")) {
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 21, 7);
+					userService.addKeycloakUser(user,"America","Region-Admin");
+				}
+				else if(name.contains("europe")) {
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 21, 8);
+					userService.addKeycloakUser(user,"Europe","Region-Admin");
+				}
+				else if(name.contains("asia")) {
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 21, 9);
+					userService.addKeycloakUser(user,"Asia","Region-Admin");
+				}
+				else {
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 21, 10);
+					userService.addKeycloakUser(user,"Africa","Region-Admin");
+				}
+				userRepository.save(user);
+
+			});
+			userRepository.findAll().forEach(System.out::println);
 		};
 	}
 }

@@ -13,19 +13,39 @@ public class User
 	private String	email;
 	@Column(unique=true)
 	private String	userName;
+	private long roleID;
+	private long tenantID;
 
 
 	public User()
 	{
 		
 	}
-	
+
+	public long getRoleID() {
+		return roleID;
+	}
+
+	public long getTenantID() {
+		return tenantID;
+	}
+
 	/**
 	 * @param firstName
 	 * @param lastName
 	 * @param email
 	 * @param userName
 	 */
+	public User(String firstName,String lastName, String email,String userName,long roleID,long tenantID)
+	{
+		this.firstName = firstName;
+		this.lastName=lastName;
+		this.email = email;
+		this.userName=userName;
+		this.roleID=roleID;
+		this.tenantID=tenantID;
+	}
+
 	public User(String firstName,String lastName, String email,String userName)
 	{
 		this.firstName = firstName;

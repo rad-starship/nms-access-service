@@ -36,6 +36,9 @@ public class NmsAccessControllers
 	@Autowired
 	private TenantRepository	tenantRepository;
 
+	@Autowired
+	private RoleRepository	roleRepository;
+
 	@GetMapping("/users")
 	@ResponseBody
 	public List<User> getUsers()
@@ -50,15 +53,28 @@ public class NmsAccessControllers
 	public Object addUser(@RequestBody User user)
 	{
 		try {
-			System.out.println("addUser: " + user);
-			userRepository.save(user);
-			userService.addKeycloakUser(user);
-			return user;
+			if(tenantRepository.existsById(user.getTenantID())){
+				Tenant tenant=tenantRepository.findById(user.getTenantID()).get();
+				if(roleRepository.existsById(user.getRoleID())){
+					Role role=roleRepository.findById(user.getRoleID()).get();
+					userRepository.save(user);
+					userService.addKeycloakUser(user,tenant.getName(),role.getName());
+					return user;
+				}
+				else throw new Exception();
+			}
+			else throw new Exception();
+
 		}
 
 		catch (DataIntegrityViolationException e){
 			HashMap<String,String> response= new HashMap<>();
 			response.put("Data","Username already exists");
+			return  response;
+		}
+		catch (Exception e){
+			HashMap<String,String> response= new HashMap<>();
+			response.put("Data","Tenant ID or Role ID Does not exists");
 			return  response;
 		}
 	}
@@ -69,10 +85,18 @@ public class NmsAccessControllers
 		User user;
 		user=getUserFromRepository(id);
 		if(user!=null) {
-			userRepository.delete(user);
-			userService.deleteKeycloakUser(user.getUserName());
-			System.out.println("User deleted successfully.");
-			return user;
+			if(roleRepository.existsById(user.getRoleID())){
+				Role userRole=roleRepository.findById(user.getRoleID()).get();
+				if(userRole.getName().equals("Admin"))
+					return null;
+			}
+			Tenant tenant=getTenantFromRepository(user.getTenantID());
+			if(tenant==null)
+				return null;
+				userRepository.delete(user);
+				userService.deleteKeycloakUser(user.getUserName(),tenant.getName());
+				System.out.println("User deleted successfully.");
+				return user;
 		}
 		else
 			System.out.println("The user doesnt exist.");
@@ -133,8 +157,11 @@ public class NmsAccessControllers
 	Map<String, Boolean> response = new HashMap<>();
 	System.out.println("DeleteRole: " + roleName);
 	try {
-		roleService.deleteRole(new Role(roleName));
-		response.put("deleted", Boolean.TRUE);
+		if(roleName.equals("Admin")){
+			throw new NotFoundException();
+		}
+			roleService.deleteRole(new Role(roleName));
+			response.put("deleted", Boolean.TRUE);
 	}
 	catch(NotFoundException e){
 		response.put("deleted",Boolean.FALSE);
@@ -150,6 +177,10 @@ public class NmsAccessControllers
 		Map<String, Boolean> response = new HashMap<>();
 		System.out.println("DeleteRole: " + roleId);
 		try {
+			if(roleRepository.existsById(roleId)){
+				if(roleRepository.findById(roleId).get().getName().equals("Admin"))
+					throw new NotFoundException();
+			}
 			roleService.deleteRole(roleId);
 			response.put("deleted", Boolean.TRUE);
 		}
@@ -195,6 +226,8 @@ public class NmsAccessControllers
 		Tenant tenant;
 		tenant=getTenantFromRepository(id);
 		if(tenant!=null) {
+			if(tenant.getName().equals("Admin"))
+				return null;
 			tenantRepository.delete(tenant);
 			tenantService.deleteKeycloakTenant(tenant.getName());
 			return tenant;
@@ -229,4 +262,5 @@ public class NmsAccessControllers
 		Optional<Tenant> tenantExists = tenantRepository.findById(id);
 		return tenantExists.orElse(null);
 	}
+
 }

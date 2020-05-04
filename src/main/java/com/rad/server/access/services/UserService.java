@@ -16,11 +16,11 @@ import java.util.List;
 @Service
 public interface UserService
 {
-    void addKeycloakUser(User user);
+    void addKeycloakUser(User user,String tenant,String role);
 
     List<User> getKeycloakUsers();
 
-    void deleteKeycloakUser(String id);
+    void deleteKeycloakUser(String username,String tenant);
 
     void updateKeycloakUser(User user,String userName);
 }

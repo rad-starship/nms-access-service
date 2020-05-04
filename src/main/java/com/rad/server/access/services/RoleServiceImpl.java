@@ -2,7 +2,9 @@ package com.rad.server.access.services;
 
 import com.rad.server.access.componenets.KeycloakAdminProperties;
 import com.rad.server.access.entities.Role;
+import com.rad.server.access.entities.Tenant;
 import com.rad.server.access.repositories.RoleRepository;
+import com.rad.server.access.repositories.TenantRepository;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.RoleResource;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import javax.websocket.OnClose;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.NotFoundException;
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,6 +29,9 @@ public class RoleServiceImpl implements RoleService {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private TenantRepository tenantRepository;
 
     @Autowired
     private KeycloakAdminProperties prop;
@@ -163,20 +169,23 @@ public class RoleServiceImpl implements RoleService {
 
     public void addKeycloakRole(Role role) {
         Keycloak keycloak = getKeycloak();
-        RealmResource realmResource = keycloak.realm("Admin");
-        RoleRepresentation newRole = new RoleRepresentation();
-        try {
-            List<RoleRepresentation> permissions = getPermissions(role.getPermissions());
-            newRole.setName(role.getName());
-            realmResource.roles().create(newRole);
-            if (permissions.size()>0) {
-                realmResource.roles().get(role.getName()).toRepresentation().setComposite(true);
-                realmResource.roles().get(role.getName()).addComposites(permissions);
+        for (Tenant t:tenantRepository.findAll()) {
+            RealmResource realmResource = keycloak.realm(t.getName());
+            RoleRepresentation newRole = new RoleRepresentation();
+            try {
+                List<RoleRepresentation> permissions = getPermissions(role.getPermissions());
+                newRole.setName(role.getName());
+                realmResource.roles().create(newRole);
+                if (permissions.size()>0) {
+                    realmResource.roles().get(role.getName()).toRepresentation().setComposite(true);
+                    realmResource.roles().get(role.getName()).addComposites(permissions);
+                }
+            }
+            catch (Exception e){
+                System.out.println("An error Happen");
             }
         }
-        catch (Exception e){
-            System.out.println("An error Happen");
-        }
+
 
     }
 

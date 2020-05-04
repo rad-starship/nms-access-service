@@ -16,10 +16,7 @@ import org.springframework.stereotype.Service;
 
 import javax.websocket.OnClose;
 import javax.ws.rs.core.Response;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 @Service
@@ -46,19 +43,18 @@ public class UserServiceImpl implements UserService {
         UsersResource users =  realmResource.users();
         users.list().forEach(user->output.add(new User(user.getFirstName(),user.getLastName(),user.getEmail(),user.getUsername())));
         return output;
-
     }
 
     @Override
-    public void deleteKeycloakUser(String userName){
+    public void deleteKeycloakUser(String userName,String tenant){
         Keycloak keycloak=getKeycloakInstance();
-        RealmResource realmResource = keycloak.realm("Admin");
+        RealmResource realmResource = keycloak.realm(tenant);
         UsersResource users =  realmResource.users();
         users.delete(users.search(userName).get(0).getId());
     }
 
     @Override
-    public void addKeycloakUser(User user) {
+    public void addKeycloakUser(User user,String tenant,String role) {
         Keycloak keycloak = getKeycloakInstance();
         UserRepresentation userRep= new UserRepresentation();
         userRep.setEnabled(true);
@@ -67,10 +63,21 @@ public class UserServiceImpl implements UserService {
         userRep.setLastName(user.getLastName());
         userRep.setEmail(user.getEmail());
         userRep.setAttributes(Collections.singletonMap("origin", Arrays.asList("demo")));
-        RealmResource realmResource = keycloak.realm("Admin");
-
+        RealmResource realmResource = keycloak.realm(tenant);
         UsersResource usersResource = realmResource.users();
         Response response=usersResource.create(userRep);
+        UserRepresentation addUserRole=usersResource.search(user.getUserName()).get(0);
+        UserResource updateUser=usersResource.get(addUserRole.getId());
+        List<RoleRepresentation> roleRepresentationList = updateUser.roles().realmLevel().listAvailable();
+
+        for (RoleRepresentation roleRepresentation : roleRepresentationList)
+        {
+            if (roleRepresentation.getName().equals(role))
+            {
+                updateUser.roles().realmLevel().add(Arrays.asList(roleRepresentation));
+                break;
+            }
+        }
 
         System.out.printf("Repsonse: %s %s%n", response.getStatus(), response.getStatusInfo());
 
