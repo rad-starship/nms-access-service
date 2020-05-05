@@ -7,6 +7,7 @@ import com.rad.server.access.entities.Role;
 import com.rad.server.access.entities.User;
 import org.springframework.stereotype.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -16,7 +17,7 @@ import java.util.List;
 @Service
 public interface UserService
 {
-    void addKeycloakUser(User user,String tenant,String role);
+    void addKeycloakUser(User user, ArrayList<String> tenant, String role);
 
     List<User> getKeycloakUsers();
 

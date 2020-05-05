@@ -53,17 +53,22 @@ public class NmsAccessControllers
 	public Object addUser(@RequestBody User user)
 	{
 		try {
-			if(tenantRepository.existsById(user.getTenantID())){
-				Tenant tenant=tenantRepository.findById(user.getTenantID()).get();
+			ArrayList<String> realms=new ArrayList<>();
+			for (Long tenant:user.getTenantID()) {
+				if(tenantRepository.existsById(tenant)){
+					realms.add(tenantRepository.findById(tenant).get().getName());
+				}
+				else{
+					throw new Exception();
+				}
+			}
 				if(roleRepository.existsById(user.getRoleID())){
 					Role role=roleRepository.findById(user.getRoleID()).get();
 					userRepository.save(user);
-					userService.addKeycloakUser(user,tenant.getName(),role.getName());
+					userService.addKeycloakUser(user,realms,role.getName());
 					return user;
 				}
 				else throw new Exception();
-			}
-			else throw new Exception();
 
 		}
 
@@ -90,11 +95,13 @@ public class NmsAccessControllers
 				if(userRole.getName().equals("Admin"))
 					return null;
 			}
-			Tenant tenant=getTenantFromRepository(user.getTenantID());
-			if(tenant==null)
-				return null;
-				userRepository.delete(user);
+			for (Long tenants: user.getTenantID()) {
+				Tenant tenant=getTenantFromRepository(tenants);
+				if(tenant==null)
+					return null;
 				userService.deleteKeycloakUser(user.getUserName(),tenant.getName());
+			}
+				userRepository.delete(user);
 				System.out.println("User deleted successfully.");
 				return user;
 		}

@@ -1,10 +1,7 @@
 package com.rad.server.access;
 
 import java.net.*;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.*;
 
 import com.rad.server.access.services.TenantService;
@@ -124,9 +121,58 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	CommandLineRunner userInit(UserRepository userRepository,UserService userService)
 	{
 		return args -> {
-			Stream.of("John", "Julie", "Jennifer", "Helen", "Rachel").forEach(name -> {
-				User user = new User(name,name,name.toLowerCase() + "@domain.com",name);
+			Stream.of("all","americaUser","europeUser","asiaUser","africaUser","euroAsiaUser","americaAfricaUser").forEach(name -> {
+				User user;
+				ArrayList<String> realms=new ArrayList<>();
+				ArrayList<Long> tenants=new ArrayList<>();
+				if(name.equals("americaUser")) {
+					tenants.add(2L);
+					realms.add("America");
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 17, tenants);
+					userService.addKeycloakUser(user,realms,"User");
+				}
+				else if(name.equals("europeUser")) {
+					tenants.add(3L);
+					realms.add("Europe");
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 17, tenants);
+					userService.addKeycloakUser(user,realms,"User");
+				}
+				else if(name.equals("asiaUser")) {
+					tenants.add(4L);
+					realms.add("Asia");
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 17, tenants);
+					userService.addKeycloakUser(user,realms,"User");
+				}
+				else if(name.equals("africaUser")){
+					tenants.add(5L);
+					realms.add("Africa");
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 17, tenants);
+					userService.addKeycloakUser(user,realms,"User");
+				}
+				else if(name.equals("all")){
+					tenants.add(6L);
+					realms.add("All");
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 17, tenants);
+					userService.addKeycloakUser(user,realms,"User");
+				}
+				else if(name.equals("euroAsiaUser")){
+					tenants.add(3L);
+					tenants.add(4L);
+					realms.add("Europe");
+					realms.add("Asia");
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 17, tenants);
+					userService.addKeycloakUser(user,realms,"User");
+				}
+				else{
+					tenants.add(2L);
+					tenants.add(5L);
+					realms.add("America");
+					realms.add("Africa");
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 17, tenants);
+					userService.addKeycloakUser(user,realms,"User");
+				}
 				userRepository.save(user);
+
 			});
 			userRepository.findAll().forEach(System.out::println);
 		};
@@ -137,9 +183,13 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	{
 		return args -> {
 			Stream.of("Admin").forEach(name -> {
-				User user = new User(name,name,name.toLowerCase() + "@domain.com","admin",20,6);
+				ArrayList<String> realms=new ArrayList<>();
+				ArrayList<Long> tenants=new ArrayList<>();
+				tenants.add(1L);
+				realms.add("Admin");
+				User user = new User(name,name,name.toLowerCase() + "@domain.com","admin",15,tenants);
 				userRepository.save(user);
-				userService.addKeycloakUser(user,"Admin","Admin");
+				userService.addKeycloakUser(user,realms,"Admin");
 			});
 			userRepository.findAll().forEach(System.out::println);
 		};
@@ -150,21 +200,32 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 		return args -> {
 			Stream.of("americaAdmin","europeAdmin","asiaAdmin","africaAdmin").forEach(name -> {
 				User user;
+				ArrayList<String> realms=new ArrayList<>();
+				ArrayList<Long> tenants=new ArrayList<>();
+
 				if(name.contains("america")) {
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 21, 7);
-					userService.addKeycloakUser(user,"America","Region-Admin");
+					tenants.add(2L);
+					realms.add("America");
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 16, tenants);
+					userService.addKeycloakUser(user,realms,"Region-Admin");
 				}
 				else if(name.contains("europe")) {
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 21, 8);
-					userService.addKeycloakUser(user,"Europe","Region-Admin");
+					tenants.add(3L);
+					realms.add("Europe");
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 16, tenants);
+					userService.addKeycloakUser(user,realms,"Region-Admin");
 				}
 				else if(name.contains("asia")) {
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 21, 9);
-					userService.addKeycloakUser(user,"Asia","Region-Admin");
+					tenants.add(4L);
+					realms.add("Asia");
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 16, tenants);
+					userService.addKeycloakUser(user,realms,"Region-Admin");
 				}
 				else {
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 21, 10);
-					userService.addKeycloakUser(user,"Africa","Region-Admin");
+					tenants.add(5L);
+					realms.add("Africa");
+					user = new User(name, name, name.toLowerCase() + "@domain.com", name, 16, tenants);
+					userService.addKeycloakUser(user,realms,"Region-Admin");
 				}
 				userRepository.save(user);
 

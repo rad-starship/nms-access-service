@@ -1,6 +1,10 @@
 package com.rad.server.access.entities;
 
+import javax.jws.Oneway;
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Entity
 public class User
@@ -14,7 +18,8 @@ public class User
 	@Column(unique=true)
 	private String	userName;
 	private long roleID;
-	private long tenantID;
+	@ElementCollection
+	private List<Long> tenantsID;
 
 
 	public User()
@@ -26,8 +31,8 @@ public class User
 		return roleID;
 	}
 
-	public long getTenantID() {
-		return tenantID;
+	public List<Long> getTenantID() {
+		return tenantsID;
 	}
 
 	/**
@@ -36,14 +41,25 @@ public class User
 	 * @param email
 	 * @param userName
 	 */
-	public User(String firstName,String lastName, String email,String userName,long roleID,long tenantID)
+	public User(String firstName,String lastName, String email,String userName,long roleID,Long[] tenants)
+	{
+		tenantsID=new ArrayList<>();
+		this.firstName = firstName;
+		this.lastName=lastName;
+		this.email = email;
+		this.userName=userName;
+		this.roleID=roleID;
+		tenantsID.addAll(Arrays.asList(tenants));
+	}
+
+	public User(String firstName,String lastName, String email,String userName,long roleID,ArrayList<Long> tenants)
 	{
 		this.firstName = firstName;
 		this.lastName=lastName;
 		this.email = email;
 		this.userName=userName;
 		this.roleID=roleID;
-		this.tenantID=tenantID;
+		tenantsID=tenants;
 	}
 
 	public User(String firstName,String lastName, String email,String userName)
@@ -63,6 +79,14 @@ public class User
 	public long getId()
 	{
 		return this.id;
+	}
+
+	public void setRoleID(long roleID) {
+		this.roleID = roleID;
+	}
+
+	public void setTenantsID(List<Long> tenantsID) {
+		this.tenantsID = tenantsID;
 	}
 
 	public void setId(long id)
