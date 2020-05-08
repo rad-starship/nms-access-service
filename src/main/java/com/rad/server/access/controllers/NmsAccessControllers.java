@@ -4,6 +4,7 @@ import java.util.*;
 
 import com.rad.server.access.services.RoleService;
 import com.rad.server.access.services.TenantService;
+import com.rad.server.access.services.TokenService;
 import com.rad.server.access.services.UserService;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -30,6 +31,8 @@ public class NmsAccessControllers
 	@Autowired
 	private TenantService tenantService;
 
+	private TokenService tokenService;
+
 	@Autowired
 	private UserRepository	userRepository;
 
@@ -45,6 +48,7 @@ public class NmsAccessControllers
 	{
 		List<User> users =(List<User>) userRepository.findAll();
 		System.out.println("getUsers: " + users);
+		userService.getKeycloakUsers();
 		return users;
 	}
 
@@ -220,7 +224,7 @@ public class NmsAccessControllers
 			tenantService.addKeycloakTenant(tenant);
 			return tenant;
 		}
-		catch (DataIntegrityViolationException e){
+		catch (Exception e){
 			HashMap<String,String> response= new HashMap<>();
 			response.put("Data","Tenant already exists");
 			return  response;
@@ -252,7 +256,7 @@ public class NmsAccessControllers
 			response.put("Data","The tenant does not exist");
 			return response;
 		}
-		Tenant newTenant=new Tenant(tenant.getName());
+		Tenant newTenant=new Tenant(tenant.getName(),tenant.getTokenMinutes(),tenant.getTokenHours(),tenant.getTokenDays(),tenant.getAccessTokenTimeout());
 		newTenant.setId(id);
 		tenantService.updateKeycloakTenant(tenant,oldTenant.getName());
 		tenantRepository.save(newTenant);

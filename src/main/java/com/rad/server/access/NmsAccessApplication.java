@@ -60,7 +60,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	{
 		return args -> {
 			Stream.of("Admin", "America", "Europe", "Asia", "Africa","All").forEach(name -> {
-				Tenant t = new Tenant(name);
+				Tenant t = new Tenant(name,35,6,8,15);
 				repository.save(t);
 			});
 			repository.findAll().forEach(System.out::println);
