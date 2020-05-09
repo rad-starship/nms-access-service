@@ -1,5 +1,8 @@
 package com.rad.server.access.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import javax.jws.Oneway;
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -17,6 +20,8 @@ public class User
 	private String	email;
 	@Column(unique=true)
 	private String	userName;
+	@JsonIgnore
+	private String password;
 	private long roleID;
 	@ElementCollection
 	private List<Long> tenantsID;
@@ -41,7 +46,7 @@ public class User
 	 * @param email
 	 * @param userName
 	 */
-	public User(String firstName,String lastName, String email,String userName,long roleID,Long[] tenants)
+	public User(String firstName,String lastName, String email,String userName,String password,long roleID,Long[] tenants)
 	{
 		tenantsID=new ArrayList<>();
 		this.firstName = firstName;
@@ -49,16 +54,18 @@ public class User
 		this.email = email;
 		this.userName=userName;
 		this.roleID=roleID;
+		this.password=password;
 		tenantsID.addAll(Arrays.asList(tenants));
 	}
 
-	public User(String firstName,String lastName, String email,String userName,long roleID,ArrayList<Long> tenants)
+	public User(String firstName,String lastName, String email,String userName,String password,long roleID,ArrayList<Long> tenants)
 	{
 		this.firstName = firstName;
 		this.lastName=lastName;
 		this.email = email;
 		this.userName=userName;
 		this.roleID=roleID;
+		this.password=password;
 		tenantsID=tenants;
 	}
 
@@ -128,6 +135,13 @@ public class User
 		return this.email;
 	}
 
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
 
 	@Override
 	public String toString()
