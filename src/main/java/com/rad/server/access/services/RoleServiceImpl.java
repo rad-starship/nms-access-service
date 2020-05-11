@@ -196,7 +196,7 @@ public class RoleServiceImpl implements RoleService {
                 }
             }
             catch (Exception e){
-                System.out.println("An error Happen");
+                System.out.println("Roles Already Exists On Keycloak");
             }
         }
 
