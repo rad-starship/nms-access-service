@@ -13,16 +13,10 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.websocket.OnClose;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.NotFoundException;
-import java.time.temporal.TemporalAccessor;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class RoleServiceImpl implements RoleService {
@@ -52,6 +46,26 @@ public class RoleServiceImpl implements RoleService {
     public  List<Role> getRoles() {
          getKeycloakRoles();
          return getComposites();
+    }
+
+    @Override
+    public List<Map<String, String>> getPermissions() {
+        getKeycloakRoles();
+        return getNonComposites();
+    }
+
+    private List<Map<String, String>> getNonComposites() {
+        List<Map<String,String>> output = new ArrayList<>();
+        for (Role role :roleRepository.findAll()){
+            if (role.getPermissions().size()==0 && !role.getName().equals("offline_access")){
+                Map<String,String> record = new ConcurrentHashMap<>();
+                record.put("name",role.getName());
+                record.put("Id",String.valueOf(role.getId()));
+                output.add(record);
+            }
+        }
+        return output;
+
     }
 
     @Override

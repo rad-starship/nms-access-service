@@ -7,6 +7,7 @@ import com.rad.server.access.entities.Role;
 import org.springframework.stereotype.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author raz_o
@@ -16,6 +17,7 @@ import java.util.List;
 public interface RoleService
 {
     List<Role> getRoles();
+    List<Map<String, String>> getPermissions();
 
     void initRole(Role role);
 
@@ -26,4 +28,6 @@ public interface RoleService
     void deleteRole(long roleId);
 
     Role updateRole(Long roleId, Role roleDetailes);
+
+
 }

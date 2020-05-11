@@ -203,7 +203,15 @@ public class NmsAccessControllers
 
 	}
 
-	
+
+	@GetMapping("/permissions")
+	@ResponseBody
+	public List<Map<String,String>> getPermissions(){
+		List<Map<String,String>> permissions = roleService.getPermissions();
+		return permissions;
+	}
+
+
 	@GetMapping("/tenants")
 	@ResponseBody
 	public List<Tenant> getTenants()
