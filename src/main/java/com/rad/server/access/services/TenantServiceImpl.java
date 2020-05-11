@@ -6,23 +6,29 @@ import com.rad.server.access.entities.User;
 import com.rad.server.access.repositories.TenantRepository;
 import org.apache.commons.codec.binary.Base64;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.ClientsResource;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class TenantServiceImpl implements TenantService {
 
     @Autowired
     private KeycloakAdminProperties prop;
+    private Map<String,ClientRepresentation> clientRepresentationMap = new ConcurrentHashMap<>();
+    final String webUri = "http://localhost:4200/*";
+    final String serverUri = "http://localhost:8083/*";
+    final String dataUri = "http://localhost:8082/*";
+    final String nmsUri = "http://localhost:8081/*";
 
 
     private Keycloak getKeycloakInstance(){
@@ -47,6 +53,45 @@ public class TenantServiceImpl implements TenantService {
         realm.setOfflineSessionIdleTimeout(tenant.getTokenDays()*24*60);
         realm.setAccessTokenLifespan(tenant.getAccessTokenTimeout());
         keycloak.realms().create(realm);
+
+    }
+
+    private void addAllclients(String realm) {
+        //CORONA-WEB-CLIENT
+        ClientRepresentation web = getClientRep("corona-web",webUri);
+        ClientRepresentation server = getClientRep("corona-server",serverUri);
+        ClientRepresentation nms = getClientRep("corona-nms",nmsUri);
+        ClientRepresentation health = getClientRep("health-data",dataUri);
+        ClientsResource clients = getKeycloakInstance().realm(realm).clients();
+
+
+        try{
+
+            clients.create(web);
+            clients.create(server);
+            clients.create(nms);
+            clients.create(health);
+        }
+        catch(Exception e){
+            e.printStackTrace();
+            System.out.println("Already Exist client");
+        }
+    }
+
+    private ClientRepresentation getClientRep(String name,String uri){
+        if(clientRepresentationMap.get(name)!= null){
+            return clientRepresentationMap.get(name);
+        }
+        else
+        {
+        ClientRepresentation output = new ClientRepresentation();
+        output.setClientId(name);
+        List<String> urls = new ArrayList<>();
+        urls.add(uri);
+        output.setRedirectUris(urls);
+        output.setPublicClient(true);
+        clientRepresentationMap.put(name,output);
+        return output;}
     }
 
     @Override
@@ -89,6 +134,9 @@ public class TenantServiceImpl implements TenantService {
         for(RealmRepresentation r:keycloak.realms().findAll()){
             if(r.getRealm().equals("master"))
                 continue;
+            //Add Clients for each  KC relm
+            addAllclients(r.getRealm());
+
             boolean exists=false;
             for(Tenant t:repository.findAll()){
                 if(t.getName().equals(r.getRealm()))
