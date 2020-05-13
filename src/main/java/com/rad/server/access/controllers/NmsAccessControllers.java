@@ -4,15 +4,15 @@ import java.util.*;
 
 import com.rad.server.access.services.RoleService;
 import com.rad.server.access.services.TenantService;
-import com.rad.server.access.services.TokenService;
 import com.rad.server.access.services.UserService;
+import org.keycloak.representations.AccessToken;
 import org.springframework.beans.factory.annotation.*;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.*;
 import org.springframework.web.bind.annotation.*;
 import com.rad.server.access.entities.*;
 import com.rad.server.access.repositories.*;
 
+import javax.management.InstanceAlreadyExistsException;
 import javax.validation.Valid;
 import javax.ws.rs.NotFoundException;
 
@@ -31,8 +31,6 @@ public class NmsAccessControllers
 	@Autowired
 	private TenantService tenantService;
 
-	private TokenService tokenService;
-
 	@Autowired
 	private UserRepository	userRepository;
 
@@ -42,13 +40,16 @@ public class NmsAccessControllers
 	@Autowired
 	private RoleRepository	roleRepository;
 
+	@Autowired
+	private AccessToken token;
+
+
 	@GetMapping("/users")
 	@ResponseBody
 	public List<User> getUsers()
 	{
 		List<User> users =(List<User>) userRepository.findAll();
 		System.out.println("getUsers: " + users);
-		userService.getKeycloakUsers();
 		return users;
 	}
 
@@ -57,13 +58,16 @@ public class NmsAccessControllers
 	public Object addUser(@RequestBody User user)
 	{
 		try {
+			if(!isTokenUserFromSameTenant(user)){
+				throw new Error();
+			}
 			ArrayList<String> realms=new ArrayList<>();
 			for (Long tenant:user.getTenantID()) {
 				if(tenantRepository.existsById(tenant)){
 					realms.add(tenantRepository.findById(tenant).get().getName());
 				}
 				else{
-					throw new Exception();
+					throw new InstanceAlreadyExistsException();
 				}
 			}
 				if(roleRepository.existsById(user.getRoleID())){
@@ -72,18 +76,22 @@ public class NmsAccessControllers
 					userService.addKeycloakUser(user,realms,role.getName());
 					return user;
 				}
-				else throw new Exception();
+				else throw new NotFoundException();
 
 		}
-
-		catch (DataIntegrityViolationException e){
+		catch (NotFoundException e){
+			HashMap<String,String> response= new HashMap<>();
+			response.put("Data","Tenant ID or Role ID Does not exists");
+			return  response;
+		}
+		catch (InstanceAlreadyExistsException e){
 			HashMap<String,String> response= new HashMap<>();
 			response.put("Data","Username already exists");
 			return  response;
 		}
-		catch (Exception e){
+		catch (java.lang.Error e){
 			HashMap<String,String> response= new HashMap<>();
-			response.put("Data","Tenant ID or Role ID Does not exists");
+			response.put("Data","keycloak user not authorized");
 			return  response;
 		}
 	}
@@ -93,6 +101,8 @@ public class NmsAccessControllers
 	public User deleteUser(@PathVariable long id){
 		User user;
 		user=getUserFromRepository(id);
+		if(!isTokenUserFromSameTenant(user))
+			return null;
 		if(user!=null) {
 			if(roleRepository.existsById(user.getRoleID())){
 				Role userRole=roleRepository.findById(user.getRoleID()).get();
@@ -118,6 +128,8 @@ public class NmsAccessControllers
 	@ResponseBody
 	public User updateUser(@PathVariable long id,@RequestBody User user){
 		User oldUser=getUserFromRepository(id);
+		if(!isTokenUserFromSameTenant(oldUser))
+			return null;
 		if(oldUser==null)
 			return null;
 		User newUser=new User(user);
@@ -252,7 +264,7 @@ public class NmsAccessControllers
 			return tenant;
 		}
 		else
-		return null;
+			return null;
 	}
 
 	@PutMapping("/tenants/{id}")
@@ -264,7 +276,7 @@ public class NmsAccessControllers
 			response.put("Data","The tenant does not exist");
 			return response;
 		}
-		Tenant newTenant=new Tenant(tenant.getName(),tenant.getTokenMinutes(),tenant.getTokenHours(),tenant.getTokenDays(),tenant.getAccessTokenTimeout());
+		Tenant newTenant=new Tenant(tenant.getName(),tenant.getSSOSessionIdle(),tenant.getSSOSessionMax(),tenant.getOfflineSessionIdle(),tenant.getAccessTokenLifespan());
 		newTenant.setId(id);
 		tenantService.updateKeycloakTenant(tenant,oldTenant.getName());
 		tenantRepository.save(newTenant);
@@ -280,6 +292,35 @@ public class NmsAccessControllers
 	private Tenant getTenantFromRepository(long id) {
 		Optional<Tenant> tenantExists = tenantRepository.findById(id);
 		return tenantExists.orElse(null);
+	}
+
+	private Role getRoleFromRepository(long id) {
+		Optional<Role> roleExists = roleRepository.findById(id);
+		return roleExists.orElse(null);
+	}
+
+	private User getUserFromToken(){
+		String username=token.getPreferredUsername();
+		for (User user: userRepository.findAll()) {
+			if(user.getUserName().equals(username))
+				return user;
+		}
+		return null;
+	}
+
+	private boolean isTokenUserFromSameTenant(User user){
+		User tokenUser=getUserFromToken();
+		if(tokenUser==null)
+			return false;
+		Role tokenRole=getRoleFromRepository(tokenUser.getRoleID());
+		if(tokenRole==null)
+			return false;
+		if(tokenRole.getName().equals("Region-Admin")){
+			if(!tokenUser.getTenantID().containsAll(user.getTenantID())){
+				return false;
+			}
+		}
+		return true;
 	}
 
 }

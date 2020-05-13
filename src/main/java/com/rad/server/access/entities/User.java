@@ -2,6 +2,8 @@ package com.rad.server.access.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.hibernate.annotations.Fetch;
+import org.springframework.data.repository.cdi.Eager;
 
 import javax.jws.Oneway;
 import javax.persistence.*;
@@ -23,7 +25,7 @@ public class User
 	@JsonIgnore
 	private String password;
 	private long roleID;
-	@ElementCollection
+	@ElementCollection(fetch = FetchType.EAGER)
 	private List<Long> tenantsID;
 
 
@@ -81,6 +83,10 @@ public class User
 		this.firstName=user.firstName;
 		this.lastName=user.lastName;
 		this.email=user.email;
+	}
+
+	public void addTenant(long id){
+		tenantsID.add(id);
 	}
 
 	public long getId()

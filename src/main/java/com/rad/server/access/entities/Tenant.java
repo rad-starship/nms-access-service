@@ -20,10 +20,10 @@ public class Tenant
 	@Column(unique = true)
 	private String	name;
 
-	private int tokenMinutes;
-	private int tokenHours;
-	private int tokenDays;
-	private int accessTokenTimeout;
+	private int SSOSessionIdle;
+	private int SSOSessionMax;
+	private int offlineSessionIdle;
+	private int accessTokenLifespan;
 
 	public Tenant()
 	{
@@ -33,10 +33,10 @@ public class Tenant
 	public Tenant(String name,int tokenMinutes,int tokenHours,int tokenDays,int accessTokenTimeout)
 	{
 		this.name = name;
-		this.tokenMinutes=tokenMinutes;
-		this.tokenHours=tokenHours;
-		this.tokenDays=tokenDays;
-		this.accessTokenTimeout=accessTokenTimeout;
+		this.SSOSessionIdle=tokenMinutes;
+		this.SSOSessionMax=tokenHours;
+		this.offlineSessionIdle=tokenDays;
+		this.accessTokenLifespan=accessTokenTimeout;
 	}
 
 	public long getId()
@@ -58,36 +58,36 @@ public class Tenant
 		this.name = name;
 	}
 
-	public int getTokenMinutes() {
-		return tokenMinutes;
+	public int getSSOSessionIdle() {
+		return SSOSessionIdle;
 	}
 
-	public void setTokenMinutes(int tokenMinutes) {
-		this.tokenMinutes = tokenMinutes;
+	public void setSSOSessionIdle(int SSOSessionIdle) {
+		this.SSOSessionIdle = SSOSessionIdle;
 	}
 
-	public int getTokenHours() {
-		return tokenHours;
+	public int getSSOSessionMax() {
+		return SSOSessionMax;
 	}
 
-	public void setTokenHours(int tokenHours) {
-		this.tokenHours = tokenHours;
+	public void setSSOSessionMax(int SSOSessionMax) {
+		this.SSOSessionMax = SSOSessionMax;
 	}
 
-	public int getTokenDays() {
-		return tokenDays;
+	public int getOfflineSessionIdle() {
+		return offlineSessionIdle;
 	}
 
-	public void setTokenDays(int tokenDays) {
-		this.tokenDays = tokenDays;
+	public void setOfflineSessionIdle(int offlineSessionIdle) {
+		this.offlineSessionIdle = offlineSessionIdle;
 	}
 
-	public int getAccessTokenTimeout() {
-		return accessTokenTimeout;
+	public int getAccessTokenLifespan() {
+		return accessTokenLifespan;
 	}
 
-	public void setAccessTokenTimeout(int accessTokenTimeout) {
-		this.accessTokenTimeout = accessTokenTimeout;
+	public void setAccessTokenLifespan(int accessTokenLifespan) {
+		this.accessTokenLifespan = accessTokenLifespan;
 	}
 
 	@Override

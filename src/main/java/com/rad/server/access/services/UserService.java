@@ -5,6 +5,7 @@ package com.rad.server.access.services;
 
 import com.rad.server.access.entities.Role;
 import com.rad.server.access.entities.User;
+import com.rad.server.access.repositories.UserRepository;
 import org.springframework.stereotype.*;
 
 import java.util.ArrayList;
@@ -24,4 +25,6 @@ public interface UserService
     void deleteKeycloakUser(String username,String tenant);
 
     void updateKeycloakUser(User user,String userName);
+
+    void initKeycloakUsers(UserRepository userRepository);
 }

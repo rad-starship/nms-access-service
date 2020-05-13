@@ -2,13 +2,14 @@ package com.rad.server.access.services;
 
 import com.rad.server.access.componenets.KeycloakAdminProperties;
 import com.rad.server.access.entities.Role;
+import com.rad.server.access.entities.Tenant;
 import com.rad.server.access.entities.User;
+import com.rad.server.access.repositories.RoleRepository;
+import com.rad.server.access.repositories.TenantRepository;
+import com.rad.server.access.repositories.UserRepository;
 import org.apache.commons.codec.binary.Base64;
 import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.resource.RealmResource;
-import org.keycloak.admin.client.resource.RolesResource;
-import org.keycloak.admin.client.resource.UserResource;
-import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -17,6 +18,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.management.InstanceAlreadyExistsException;
 import javax.websocket.OnClose;
 import javax.ws.rs.core.Response;
 import java.util.*;
@@ -30,6 +32,17 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     AccessToken token;
+
+    @Autowired
+    private TenantRepository tenantRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+
+
+
+
 
     private Keycloak getKeycloakInstance(){
         return Keycloak.getInstance(
@@ -111,5 +124,73 @@ public class UserServiceImpl implements UserService {
         updateUser.update(userRep);
     }
 
+    public void initKeycloakUsers(UserRepository userRepository){
+        Keycloak keycloak=getKeycloakInstance();
+        RealmsResource realms=keycloak.realms();
+        List<RealmRepresentation> existingRealms=realms.findAll();
+        for(RealmRepresentation r:existingRealms){
+            if(r.getRealm().equals("master"))
+                continue;
+            UsersResource users=keycloak.realm(r.getRealm()).users();
+            for(UserRepresentation u:users.list()){
+                if(!userExistsInRepository(u.getUsername(),r.getRealm(),userRepository)) {
+                    ArrayList<Long> realmsToAdd=new ArrayList<>();
+                    realmsToAdd.add(getTenantID(r.getRealm()));
+                    User addUser=new User(u.getFirstName(),u.getLastName(),u.getEmail(),u.getUsername(),"",getRoleID(keycloak.realm(r.getRealm()).users().get(u.getId()).roles().realmLevel().listEffective()),realmsToAdd);
+                    userRepository.save(addUser);
+                }
+            }
+        }
+
+    }
+
+    public boolean userExistsInKeycloak(User user){
+        Keycloak keycloak=getKeycloakInstance();
+        RealmsResource realms=keycloak.realms();
+        List<RealmRepresentation> existingRealms=realms.findAll();
+        for (RealmRepresentation r:existingRealms) {
+            UsersResource users=keycloak.realm(r.getRealm()).users();
+            for(UserRepresentation u:users.list()){
+                if(u.getUsername().equals(user.getUserName()))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean userExistsInRepository(String username,String realm,UserRepository userRepository){
+        for(User user:userRepository.findAll()){
+            if(user.getUserName().toLowerCase().equals(username)){
+                long tenantID=getTenantID(realm);
+                for(long id:user.getTenantID()){
+                    if(id==tenantID)
+                        return true;
+                }
+                user.addTenant(tenantID);
+                userRepository.save(user);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private long getTenantID(String tenant){
+        for(Tenant t:tenantRepository.findAll()){
+            if(t.getName().equals(tenant))
+               return t.getId();
+        }
+        return 0;
+    }
+
+    private long getRoleID(List<RoleRepresentation> roles){
+        for(RoleRepresentation role:roles){
+            for(Role r:roleRepository.findAll()){
+                if(r.getName().equals(role.getName()))
+                   return r.getId();
+            }
+        }
+
+        return 0;
+    }
 
 }

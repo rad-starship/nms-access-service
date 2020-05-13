@@ -6,12 +6,8 @@ import com.rad.server.access.entities.User;
 import com.rad.server.access.repositories.TenantRepository;
 import org.apache.commons.codec.binary.Base64;
 import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.resource.ClientsResource;
-import org.keycloak.admin.client.resource.RealmResource;
-import org.keycloak.admin.client.resource.RealmsResource;
-import org.keycloak.admin.client.resource.UsersResource;
-import org.keycloak.representations.idm.ClientRepresentation;
-import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.admin.client.resource.*;
+import org.keycloak.representations.idm.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -48,22 +44,26 @@ public class TenantServiceImpl implements TenantService {
         RealmRepresentation realm=new RealmRepresentation();
         realm.setRealm(tenant.getName());
         realm.setEnabled(true);
-        realm.setSsoSessionIdleTimeout(tenant.getTokenMinutes()*60);
-        realm.setSsoSessionMaxLifespan(tenant.getTokenHours()*60*60);
-        realm.setOfflineSessionIdleTimeout(tenant.getTokenDays()*24*60);
-        realm.setAccessTokenLifespan(tenant.getAccessTokenTimeout());
+        realm.setPasswordPolicy("length(8)");
+        realm.setSsoSessionIdleTimeout(tenant.getSSOSessionIdle()*60);
+        realm.setSsoSessionMaxLifespan(tenant.getSSOSessionMax()*60);
+        realm.setOfflineSessionIdleTimeout(tenant.getOfflineSessionIdle()*60);
+        realm.setAccessTokenLifespan(tenant.getAccessTokenLifespan()*60);
         keycloak.realms().create(realm);
-
+        addAllClients(tenant.getName());
     }
 
-    private void addAllclients(String realm) {
+    private void addAllClients(String realm) {
         //CORONA-WEB-CLIENT
+        ProtocolMapperRepresentation protocolMapperRepresentation=new ProtocolMapperRepresentation();
+        protocolMapperRepresentation.setName("details");
+        protocolMapperRepresentation.setProtocol("openid-connect");
+        protocolMapperRepresentation.setProtocolMapper("User Attribute");
         ClientRepresentation web = getClientRep("corona-web",webUri);
         ClientRepresentation server = getClientRep("corona-server",serverUri);
         ClientRepresentation nms = getClientRep("corona-nms",nmsUri);
         ClientRepresentation health = getClientRep("health-data",dataUri);
         ClientsResource clients = getKeycloakInstance().realm(realm).clients();
-
 
         try{
 
@@ -74,7 +74,7 @@ public class TenantServiceImpl implements TenantService {
         }
         catch(Exception e){
             e.printStackTrace();
-            System.out.println("Already Exist client");
+            System.out.println("Client already exists");
         }
     }
 
@@ -135,7 +135,7 @@ public class TenantServiceImpl implements TenantService {
             if(r.getRealm().equals("master"))
                 continue;
             //Add Clients for each  KC relm
-            addAllclients(r.getRealm());
+            addAllClients(r.getRealm());
 
             boolean exists=false;
             for(Tenant t:repository.findAll()){

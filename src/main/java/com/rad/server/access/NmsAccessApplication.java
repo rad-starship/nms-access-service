@@ -238,6 +238,12 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 
 			});
 			userRepository.findAll().forEach(System.out::println);
+			Thread initThread=new Thread(){
+				public void run(){
+					userService.initKeycloakUsers(userRepository);
+				}
+			};
+			initThread.start();
 		};
 	}
 
