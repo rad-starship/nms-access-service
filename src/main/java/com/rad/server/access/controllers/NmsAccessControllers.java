@@ -2,11 +2,14 @@ package com.rad.server.access.controllers;
 
 import java.util.*;
 
+import com.rad.server.access.responses.HttpResponse;
 import com.rad.server.access.services.RoleService;
 import com.rad.server.access.services.TenantService;
 import com.rad.server.access.services.UserService;
 import org.keycloak.representations.AccessToken;
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.*;
 import org.springframework.web.bind.annotation.*;
 import com.rad.server.access.entities.*;
@@ -98,30 +101,31 @@ public class NmsAccessControllers
 
 	@DeleteMapping("/users/{id}")
 	@ResponseBody
-	public User deleteUser(@PathVariable long id){
+	public ResponseEntity<?> deleteUser(@PathVariable long id){
 		User user;
 		user=getUserFromRepository(id);
 		if(!isTokenUserFromSameTenant(user))
-			return null;
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"user and token not from same tanant").getHttpResponse();
 		if(user!=null) {
 			if(roleRepository.existsById(user.getRoleID())){
 				Role userRole=roleRepository.findById(user.getRoleID()).get();
 				if(userRole.getName().equals("Admin"))
-					return null;
+					return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
 			}
 			for (Long tenants: user.getTenantID()) {
 				Tenant tenant=getTenantFromRepository(tenants);
 				if(tenant==null)
-					return null;
+					return new HttpResponse(HttpStatus.BAD_REQUEST,"tenant is null").getHttpResponse();
 				userService.deleteKeycloakUser(user.getUserName(),tenant.getName());
 			}
 				userRepository.delete(user);
 				System.out.println("User deleted successfully.");
-				return user;
+				ResponseEntity<User> result = new ResponseEntity<>(user,HttpStatus.ACCEPTED);
+				return new HttpResponse(result).getHttpResponse();
 		}
 		else
 			System.out.println("The user doesnt exist.");
-		return null;
+			return new HttpResponse(HttpStatus.NO_CONTENT,"user Doesnt Exist").getHttpResponse();
 	}
 
 	@PutMapping("/users/{id}")
@@ -176,42 +180,42 @@ public class NmsAccessControllers
 
 	@DeleteMapping("/roles/{name}")
 	@ResponseBody
-	public Map<String, Boolean> deleteRole(@PathVariable(value = "name") String roleName){
-	Map<String, Boolean> response = new HashMap<>();
+	public ResponseEntity<?> deleteRole(@PathVariable(value = "name") String roleName){
+
 	System.out.println("DeleteRole: " + roleName);
 	try {
 		if(roleName.equals("Admin")){
-			throw new NotFoundException();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
 		}
 			roleService.deleteRole(new Role(roleName));
-			response.put("deleted", Boolean.TRUE);
+			return new ResponseEntity<String>("Success",HttpStatus.ACCEPTED);
 	}
 	catch(NotFoundException e){
-		response.put("deleted",Boolean.FALSE);
+		return new  ResponseEntity<String>("Not found",HttpStatus.NO_CONTENT);
 	}
 
-	return response;
+
 
 }
 
 	@DeleteMapping("/rolesid/{id}")
 	@ResponseBody
-	public Map<String, Boolean> deleteRole(@PathVariable(value = "id") long roleId){
-		Map<String, Boolean> response = new HashMap<>();
+	public ResponseEntity<?> deleteRole(@PathVariable(value = "id") long roleId){
 		System.out.println("DeleteRole: " + roleId);
 		try {
 			if(roleRepository.existsById(roleId)){
 				if(roleRepository.findById(roleId).get().getName().equals("Admin"))
-					throw new NotFoundException();
+					return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
 			}
 			roleService.deleteRole(roleId);
-			response.put("deleted", Boolean.TRUE);
+			ResponseEntity<Long> result = new ResponseEntity<>(roleId,HttpStatus.ACCEPTED);
+			return new HttpResponse(result).getHttpResponse();
 		}
 		catch(NotFoundException e){
-			response.put("deleted",Boolean.FALSE);
+			ResponseEntity<Long> result = new ResponseEntity<>(roleId,HttpStatus.NO_CONTENT);
+			return new HttpResponse(result).getHttpResponse();
 		}
 
-		return response;
 
 	}
 
@@ -258,13 +262,14 @@ public class NmsAccessControllers
 		tenant=getTenantFromRepository(id);
 		if(tenant!=null) {
 			if(tenant.getName().equals("Admin"))
-				return null;
+				return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
 			tenantRepository.delete(tenant);
 			tenantService.deleteKeycloakTenant(tenant.getName());
-			return tenant;
+			ResponseEntity<Tenant> result = new ResponseEntity<Tenant>(tenant,HttpStatus.ACCEPTED);
+			return result;
 		}
 		else
-			return null;
+			return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
 	@PutMapping("/tenants/{id}")

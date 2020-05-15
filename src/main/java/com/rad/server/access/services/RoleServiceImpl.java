@@ -111,6 +111,8 @@ public class RoleServiceImpl implements RoleService {
             deleteKeycloakRole(role);
             roleRepository.delete(toDelete);
         }
+        else
+            throw new NotFoundException();
 
     }
     @Override
