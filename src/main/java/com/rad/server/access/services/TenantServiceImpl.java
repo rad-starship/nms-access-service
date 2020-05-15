@@ -44,13 +44,29 @@ public class TenantServiceImpl implements TenantService {
         RealmRepresentation realm=new RealmRepresentation();
         realm.setRealm(tenant.getName());
         realm.setEnabled(true);
-        realm.setPasswordPolicy("length(8)");
+        realm.setPasswordPolicy("length(8) and forceExpiredPasswordChange(365) and notUsername(undefined) and digits(1) and passwordHistory(3)");
         realm.setSsoSessionIdleTimeout(tenant.getSSOSessionIdle()*60);
         realm.setSsoSessionMaxLifespan(tenant.getSSOSessionMax()*60);
         realm.setOfflineSessionIdleTimeout(tenant.getOfflineSessionIdle()*60);
         realm.setAccessTokenLifespan(tenant.getAccessTokenLifespan()*60);
         keycloak.realms().create(realm);
         addAllClients(tenant.getName());
+        setOTP(tenant.getName());
+        System.out.println(keycloak.realm("Admin").toRepresentation().getPasswordPolicy());
+    }
+
+    private void setOTP(String realm){
+        Keycloak keycloak=getKeycloakInstance();
+        List<RequiredActionProviderRepresentation> requiredActionProviderRepresentations;
+        requiredActionProviderRepresentations=keycloak.realm(realm).flows().getRequiredActions();
+        for(RequiredActionProviderRepresentation r:requiredActionProviderRepresentations){
+            if(r.getName().equals("Configure OTP")){
+                r.setEnabled(true);
+                r.setDefaultAction(true);
+                keycloak.realm(realm).flows().updateRequiredAction(r.getAlias(),r);
+                break;
+            }
+        }
     }
 
     private void addAllClients(String realm) {

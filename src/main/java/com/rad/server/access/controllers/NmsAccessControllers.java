@@ -105,7 +105,7 @@ public class NmsAccessControllers
 		User user;
 		user=getUserFromRepository(id);
 		if(!isTokenUserFromSameTenant(user))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"user and token not from same tanant").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"user and token not from same tenant").getHttpResponse();
 		if(user!=null) {
 			if(roleRepository.existsById(user.getRoleID())){
 				Role userRole=roleRepository.findById(user.getRoleID()).get();
