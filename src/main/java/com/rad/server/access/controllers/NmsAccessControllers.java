@@ -2,8 +2,10 @@ package com.rad.server.access.controllers;
 
 import java.util.*;
 
+import com.rad.server.access.entities.settings.Settings;
 import com.rad.server.access.responses.HttpResponse;
 import com.rad.server.access.services.RoleService;
+import com.rad.server.access.services.SettingsService;
 import com.rad.server.access.services.TenantService;
 import com.rad.server.access.services.UserService;
 import org.keycloak.representations.AccessToken;
@@ -33,6 +35,9 @@ public class NmsAccessControllers
 
 	@Autowired
 	private TenantService tenantService;
+
+	@Autowired
+    private SettingsService settingsService;
 
 	@Autowired
 	private UserRepository	userRepository;
@@ -287,6 +292,18 @@ public class NmsAccessControllers
 		tenantRepository.save(newTenant);
 		return tenant;
 	}
+
+	@PostMapping("/settings")
+    @ResponseBody
+    public Object postSettings(@RequestBody Object settings){
+        System.out.println(settings);
+
+		Settings settings1 = settingsService.parseSettings(settings);
+		settingsService.applySettings(settings1);
+
+		return settings;
+
+    }
 
 
 	private User getUserFromRepository(long id) {
