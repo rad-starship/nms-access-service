@@ -4,10 +4,7 @@ import java.util.*;
 
 import com.rad.server.access.entities.settings.Settings;
 import com.rad.server.access.responses.HttpResponse;
-import com.rad.server.access.services.RoleService;
-import com.rad.server.access.services.SettingsService;
-import com.rad.server.access.services.TenantService;
-import com.rad.server.access.services.UserService;
+import com.rad.server.access.services.*;
 import org.keycloak.representations.AccessToken;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.http.HttpStatus;
@@ -38,6 +35,9 @@ public class NmsAccessControllers
 
 	@Autowired
     private SettingsService settingsService;
+
+	@Autowired
+	private AccessTokenService accessTokenService;
 
 	@Autowired
 	private UserRepository	userRepository;
@@ -304,6 +304,13 @@ public class NmsAccessControllers
 		return settings;
 
     }
+
+    @PostMapping("/getToken")
+	@ResponseBody
+	public Object login(@RequestBody(required = false) LoginEntity loginEntity){
+		System.out.println(loginEntity);
+		return accessTokenService.getAccessToken(loginEntity);
+	}
 
 
 	private User getUserFromRepository(long id) {

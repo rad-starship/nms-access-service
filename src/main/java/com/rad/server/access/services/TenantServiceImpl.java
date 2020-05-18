@@ -44,14 +44,14 @@ public class TenantServiceImpl implements TenantService {
         RealmRepresentation realm=new RealmRepresentation();
         realm.setRealm(tenant.getName());
         realm.setEnabled(true);
-        realm.setPasswordPolicy("length(8) and forceExpiredPasswordChange(365) and notUsername(undefined) and digits(1) and passwordHistory(3)");
+        //realm.setPasswordPolicy("length(8) and forceExpiredPasswordChange(365) and notUsername(undefined) and digits(1) and passwordHistory(3)");
         realm.setSsoSessionIdleTimeout(tenant.getSSOSessionIdle()*60);
         realm.setSsoSessionMaxLifespan(tenant.getSSOSessionMax()*60);
         realm.setOfflineSessionIdleTimeout(tenant.getOfflineSessionIdle()*60);
         realm.setAccessTokenLifespan(tenant.getAccessTokenLifespan()*60);
         keycloak.realms().create(realm);
         addAllClients(tenant.getName());
-        setOTP(tenant.getName());
+        //setOTP(tenant.getName());
         System.out.println(keycloak.realm("Admin").toRepresentation().getPasswordPolicy());
     }
 
@@ -106,6 +106,7 @@ public class TenantServiceImpl implements TenantService {
         urls.add(uri);
         output.setRedirectUris(urls);
         output.setPublicClient(true);
+        output.setDirectAccessGrantsEnabled(true);
         clientRepresentationMap.put(name,output);
         return output;}
     }

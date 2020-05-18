@@ -96,16 +96,16 @@ public class UserServiceImpl implements UserService {
             RealmResource realmResource = keycloak.realm(tenant);
             UsersResource usersResource = realmResource.users();
             Response response=usersResource.create(userRep);
-            UserRepresentation addUserRole=usersResource.search(user.getUserName()).get(0);
-            UserResource updateUser=usersResource.get(addUserRole.getId());
-            List<RoleRepresentation> roleRepresentationList = updateUser.roles().realmLevel().listAvailable();
+            if(response.getStatus()!=400) {
+                UserRepresentation addUserRole = usersResource.search(user.getUserName()).get(0);
+                UserResource updateUser = usersResource.get(addUserRole.getId());
+                List<RoleRepresentation> roleRepresentationList = updateUser.roles().realmLevel().listAvailable();
 
-            for (RoleRepresentation roleRepresentation : roleRepresentationList)
-            {
-                if (roleRepresentation.getName().equals(role))
-                {
-                    updateUser.roles().realmLevel().add(Arrays.asList(roleRepresentation));
-                    break;
+                for (RoleRepresentation roleRepresentation : roleRepresentationList) {
+                    if (roleRepresentation.getName().equals(role)) {
+                        updateUser.roles().realmLevel().add(Arrays.asList(roleRepresentation));
+                        break;
+                    }
                 }
             }
             System.out.printf("Repsonse: %s %s%n", response.getStatus(), response.getStatusInfo());
