@@ -20,23 +20,14 @@ public class Tenant
 	@Column(unique = true)
 	private String	name;
 
-	private int SSOSessionIdle;
-	private int SSOSessionMax;
-	private int offlineSessionIdle;
-	private int accessTokenLifespan;
-
 	public Tenant()
 	{
 		
 	}
 	
-	public Tenant(String name,int tokenMinutes,int tokenHours,int tokenDays,int accessTokenTimeout)
+	public Tenant(String name)
 	{
 		this.name = name;
-		this.SSOSessionIdle=tokenMinutes;
-		this.SSOSessionMax=tokenHours;
-		this.offlineSessionIdle=tokenDays;
-		this.accessTokenLifespan=accessTokenTimeout;
 	}
 
 	public long getId()
@@ -58,37 +49,6 @@ public class Tenant
 		this.name = name;
 	}
 
-	public int getSSOSessionIdle() {
-		return SSOSessionIdle;
-	}
-
-	public void setSSOSessionIdle(int SSOSessionIdle) {
-		this.SSOSessionIdle = SSOSessionIdle;
-	}
-
-	public int getSSOSessionMax() {
-		return SSOSessionMax;
-	}
-
-	public void setSSOSessionMax(int SSOSessionMax) {
-		this.SSOSessionMax = SSOSessionMax;
-	}
-
-	public int getOfflineSessionIdle() {
-		return offlineSessionIdle;
-	}
-
-	public void setOfflineSessionIdle(int offlineSessionIdle) {
-		this.offlineSessionIdle = offlineSessionIdle;
-	}
-
-	public int getAccessTokenLifespan() {
-		return accessTokenLifespan;
-	}
-
-	public void setAccessTokenLifespan(int accessTokenLifespan) {
-		this.accessTokenLifespan = accessTokenLifespan;
-	}
 
 	@Override
 	public String toString()

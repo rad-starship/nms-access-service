@@ -52,6 +52,7 @@ public class NmsAccessControllers
 	private AccessToken token;
 
 
+
 	@GetMapping("/users")
 	@ResponseBody
 	public List<User> getUsers()
@@ -59,6 +60,18 @@ public class NmsAccessControllers
 		List<User> users =(List<User>) userRepository.findAll();
 		System.out.println("getUsers: " + users);
 		return users;
+	}
+
+	@GetMapping("/users/getToken")
+	@ResponseBody
+	public ArrayList<String> getUserToken()
+	{
+		User tokenUser=getUserFromToken(token.getPreferredUsername());
+		ArrayList<String> tenants=new ArrayList<>();
+		for(long id:tokenUser.getTenantID()){
+			tenants.add(tenantRepository.findById(id).get().getName());
+		}
+		return tenants;
 	}
 
 	@PostMapping("/users")
@@ -123,7 +136,6 @@ public class NmsAccessControllers
 					return new HttpResponse(HttpStatus.BAD_REQUEST,"tenant is null").getHttpResponse();
 				userService.deleteKeycloakUser(user.getUserName(),tenant.getName());
 			}
-				userRepository.delete(user);
 				System.out.println("User deleted successfully.");
 				ResponseEntity<User> result = new ResponseEntity<>(user,HttpStatus.ACCEPTED);
 				return new HttpResponse(result).getHttpResponse();
@@ -286,7 +298,7 @@ public class NmsAccessControllers
 			response.put("Data","The tenant does not exist");
 			return response;
 		}
-		Tenant newTenant=new Tenant(tenant.getName(),tenant.getSSOSessionIdle(),tenant.getSSOSessionMax(),tenant.getOfflineSessionIdle(),tenant.getAccessTokenLifespan());
+		Tenant newTenant=new Tenant(tenant.getName());
 		newTenant.setId(id);
 		tenantService.updateKeycloakTenant(tenant,oldTenant.getName());
 		tenantRepository.save(newTenant);
@@ -328,8 +340,7 @@ public class NmsAccessControllers
 		return roleExists.orElse(null);
 	}
 
-	private User getUserFromToken(){
-		String username=token.getPreferredUsername();
+	private User getUserFromToken(String username){
 		for (User user: userRepository.findAll()) {
 			if(user.getUserName().equals(username))
 				return user;
@@ -338,7 +349,7 @@ public class NmsAccessControllers
 	}
 
 	private boolean isTokenUserFromSameTenant(User user){
-		User tokenUser=getUserFromToken();
+		User tokenUser=getUserFromToken(user.getUserName());
 		if(tokenUser==null)
 			return false;
 		Role tokenRole=getRoleFromRepository(tokenUser.getRoleID());

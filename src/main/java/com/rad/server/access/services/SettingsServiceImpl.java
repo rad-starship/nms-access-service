@@ -26,7 +26,7 @@ public class SettingsServiceImpl implements SettingsService {
 
             Map<String,Object> tokenMap = (Map<String, Object>) authenticationMap.get("token");
             if(tokenMap!=null){
-                token = new Token((int)tokenMap.get("ssoSessionIdle"),(int)tokenMap.get("ssoSessionMax"));
+                token = new Token((int)tokenMap.get("ssoSessionIdle"),(int)tokenMap.get("ssoSessionMax"),(int)tokenMap.get("offlineSessionIdle"),(int)tokenMap.get("accessTokenLifespan"));
             }
             else{
                 token = null;

@@ -1,14 +1,21 @@
 package com.rad.server.access;
 
+import java.io.IOException;
 import java.net.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rad.server.access.entities.settings.*;
 import com.rad.server.access.services.TenantService;
 
 import com.rad.server.access.services.RoleService;
 import com.rad.server.access.services.UserService;
 import org.keycloak.KeycloakPrincipal;
+import org.keycloak.KeycloakSecurityContext;
+import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
 import org.keycloak.representations.AccessToken;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.boot.*;
@@ -50,15 +57,33 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 			System.out.println("* NMS Access Service is Ready ");
 			System.out.println("* Host=" + hostName + ", IP=" + ip + ", Port=" + port);
 			System.out.println("*****************************************************");
+			byte[] mapData = Files.readAllBytes(Paths.get("C:\\Users\\Aviel\\IdeaProjects\\nms-access-service\\src\\googleOauth.json"));
+			Map<String,String> myMap = new HashMap<String, String>();
+
+			ObjectMapper objectMapper = new ObjectMapper();
+			myMap = objectMapper.readValue(mapData, HashMap.class);
 		}
 		catch (UnknownHostException e)
 		{
 			e.printStackTrace();
 		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
 	}
-	
 
-	
+	@Bean
+	Settings settingsInit(){
+			Autorization autorization=new Autorization();
+			Token token=new Token(30,600,1500,20);
+			PasswordPolicy passwordPolicy=new PasswordPolicy(365,8,3,1,true);
+			otpPolicy otpPolicy=new otpPolicy(false,"Time Based",8,30);
+			SocialLogin socialLogin=new SocialLogin("None");
+			Authentication authentication=new Authentication(token,passwordPolicy,otpPolicy,socialLogin);
+			return  new Settings(authentication,autorization);
+	}
+
 	/**
 	 * Populate the database with a few User entities
 	 */
@@ -67,7 +92,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	{
 		return args -> {
 			Stream.of("Admin", "America", "Europe", "Asia", "Africa","All").forEach(name -> {
-				Tenant t = new Tenant(name,35,6,8,15);
+				Tenant t = new Tenant(name);
 				repository.save(t);
 			});
 			repository.findAll().forEach(System.out::println);
@@ -258,4 +283,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 		return ((KeycloakPrincipal) request.getUserPrincipal())
 				.getKeycloakSecurityContext().getToken();
 	}
+
+
+
 }

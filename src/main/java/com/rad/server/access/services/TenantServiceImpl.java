@@ -3,6 +3,10 @@ package com.rad.server.access.services;
 import com.rad.server.access.componenets.KeycloakAdminProperties;
 import com.rad.server.access.entities.Tenant;
 import com.rad.server.access.entities.User;
+import com.rad.server.access.entities.settings.PasswordPolicy;
+import com.rad.server.access.entities.settings.Settings;
+import com.rad.server.access.entities.settings.Token;
+import com.rad.server.access.entities.settings.otpPolicy;
 import com.rad.server.access.repositories.TenantRepository;
 import org.apache.commons.codec.binary.Base64;
 import org.keycloak.admin.client.Keycloak;
@@ -20,6 +24,10 @@ public class TenantServiceImpl implements TenantService {
 
     @Autowired
     private KeycloakAdminProperties prop;
+
+    @Autowired
+    private Settings settings;
+
     private Map<String,ClientRepresentation> clientRepresentationMap = new ConcurrentHashMap<>();
     final String webUri = "http://localhost:4200/*";
     final String serverUri = "http://localhost:8083/*";
@@ -41,18 +49,27 @@ public class TenantServiceImpl implements TenantService {
     @Override
     public void addKeycloakTenant(Tenant tenant) {
         Keycloak keycloak=getKeycloakInstance();
+        PasswordPolicy passwordPolicy=settings.getAuthentication().getPasswordPolicy();
+        Token token=settings.getAuthentication().getToken();
+        otpPolicy otpPolicy=settings.getAuthentication().getOtpPolicy();
+        String password="length("+passwordPolicy.getMinimumLength()+") and forceExpiredPasswordChange("+passwordPolicy.getExpirePassword()+") and digits("+passwordPolicy.getDigits()+") and passwordHistory("+passwordPolicy.getNotRecentlyUsed()+")";
+        if(passwordPolicy.isNotUsername())
+            password+=" and notUsername(undefined)";
         RealmRepresentation realm=new RealmRepresentation();
         realm.setRealm(tenant.getName());
         realm.setEnabled(true);
-        //realm.setPasswordPolicy("length(8) and forceExpiredPasswordChange(365) and notUsername(undefined) and digits(1) and passwordHistory(3)");
-        realm.setSsoSessionIdleTimeout(tenant.getSSOSessionIdle()*60);
-        realm.setSsoSessionMaxLifespan(tenant.getSSOSessionMax()*60);
-        realm.setOfflineSessionIdleTimeout(tenant.getOfflineSessionIdle()*60);
-        realm.setAccessTokenLifespan(tenant.getAccessTokenLifespan()*60);
+        //realm.setPasswordPolicy(password);
+        realm.setSsoSessionIdleTimeout(token.getSsoSessionIdle()*60);
+        realm.setSsoSessionMaxLifespan(token.getSsoSessionMax()*60);
+        realm.setOfflineSessionIdleTimeout(token.getOfflineSessionIdle()*60);
+        realm.setAccessTokenLifespan(token.getAccessTokenLifespan()*60);
+        realm.setOtpPolicyDigits(otpPolicy.getNumberOfDigits());
+        realm.setOtpPolicyLookAheadWindow(otpPolicy.getOptTokenPeriod());
+        //realm.setOtpPolicyType(otpPolicy.getOptType());
         keycloak.realms().create(realm);
         addAllClients(tenant.getName());
-        //setOTP(tenant.getName());
-        System.out.println(keycloak.realm("Admin").toRepresentation().getPasswordPolicy());
+        if(otpPolicy.isEnabled())
+            setOTP(tenant.getName());
     }
 
     private void setOTP(String realm){
@@ -162,7 +179,7 @@ public class TenantServiceImpl implements TenantService {
             if(exists)
                 continue;
             else{
-                Tenant newTenant=new Tenant(r.getRealm(),r.getSsoSessionIdleTimeout(),r.getSsoSessionMaxLifespan(),r.getOfflineSessionIdleTimeout(),r.getAccessTokenLifespan());
+                Tenant newTenant=new Tenant(r.getRealm());
                 repository.save(newTenant);
             }
         }
