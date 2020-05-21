@@ -189,7 +189,7 @@ public class RoleServiceImpl implements RoleService {
             RealmResource realmResource = keycloak.realm(t.getName());
             RoleRepresentation newRole = new RoleRepresentation();
             try {
-                List<RoleRepresentation> permissions = getPermissions(role.getPermissions());
+                List<RoleRepresentation> permissions = getPermissions(role.getPermissions(),t.getName());
                 newRole.setName(role.getName());
                 realmResource.roles().create(newRole);
                 if (permissions.size()>0) {
@@ -205,9 +205,9 @@ public class RoleServiceImpl implements RoleService {
 
     }
 
-    private List<RoleRepresentation> getPermissions(List<String> permissions) {
+    private List<RoleRepresentation> getPermissions(List<String> permissions,String tenant) {
         Keycloak keycloak = getKeycloak();
-        RealmResource relamResource = keycloak.realm("Admin");
+        RealmResource relamResource = keycloak.realm(tenant);
         List<RoleRepresentation> output = new LinkedList<>();
         for (String r : permissions){
             RoleRepresentation role = relamResource.roles().get(r).toRepresentation();
@@ -216,6 +216,7 @@ public class RoleServiceImpl implements RoleService {
         return output;
     }
 
+    //TODO:Update Function to work with multi tenants
     private void updateKeycloakRole(Role role,Role update) {
         Keycloak keycloak = getKeycloak();
         RealmResource relamResource = keycloak.realm("Admin");
@@ -225,7 +226,7 @@ public class RoleServiceImpl implements RoleService {
         newRep.setName(update.getName());
 
         List<RoleRepresentation> oldComposites = new ArrayList<>(beforeRole.getRoleComposites());
-        List<RoleRepresentation> newComposites = getPermissions(update.getPermissions());
+        List<RoleRepresentation> newComposites = getPermissions(update.getPermissions(),"Admin");
 
         beforeRole.update(newRep);
         if(!oldComposites.isEmpty())
