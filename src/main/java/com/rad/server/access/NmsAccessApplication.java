@@ -8,6 +8,7 @@ import java.util.*;
 import java.util.stream.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rad.server.access.adapters.MultitenantConfiguration;
 import com.rad.server.access.entities.settings.*;
 import com.rad.server.access.services.TenantService;
 
@@ -34,6 +35,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import javax.servlet.http.HttpServletRequest;
 
 @SpringBootApplication
+@ImportAutoConfiguration(MultitenantConfiguration.class)
 public class NmsAccessApplication implements ApplicationListener<ApplicationReadyEvent>
 {
     @Autowired
