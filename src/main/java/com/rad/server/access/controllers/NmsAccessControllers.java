@@ -7,12 +7,14 @@ import com.rad.server.access.responses.HttpResponse;
 import com.rad.server.access.services.*;
 import org.keycloak.representations.AccessToken;
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.*;
 import org.springframework.web.bind.annotation.*;
 import com.rad.server.access.entities.*;
 import com.rad.server.access.repositories.*;
+import org.apache.commons.codec.binary.Base64;
 
 import javax.management.InstanceAlreadyExistsException;
 import javax.validation.Valid;
@@ -55,18 +57,18 @@ public class NmsAccessControllers
 
 	@GetMapping("/users")
 	@ResponseBody
-	public List<User> getUsers()
+	public List<User> getUsers(@RequestHeader HttpHeaders headers)
 	{
 		List<User> users =(List<User>) userRepository.findAll();
 		System.out.println("getUsers: " + users);
 		return users;
 	}
 
-	@GetMapping("/users/getToken")
+	@GetMapping("/users/getTokenTenants/{username}")
 	@ResponseBody
-	public ArrayList<String> getUserToken()
+	public ArrayList<String> getUserToken(@RequestHeader HttpHeaders headers,@PathVariable String username)
 	{
-		User tokenUser=getUserFromToken(token.getPreferredUsername());
+		User tokenUser=getUserFromToken(username);
 		ArrayList<String> tenants=new ArrayList<>();
 		for(long id:tokenUser.getTenantID()){
 			tenants.add(tenantRepository.findById(id).get().getName());

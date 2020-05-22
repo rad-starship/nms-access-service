@@ -59,17 +59,8 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 			System.out.println("* NMS Access Service is Ready ");
 			System.out.println("* Host=" + hostName + ", IP=" + ip + ", Port=" + port);
 			System.out.println("*****************************************************");
-			byte[] mapData = Files.readAllBytes(Paths.get("C:\\Users\\Aviel\\IdeaProjects\\nms-access-service\\src\\googleOauth.json"));
-			Map<String,String> myMap = new HashMap<String, String>();
-
-			ObjectMapper objectMapper = new ObjectMapper();
-			myMap = objectMapper.readValue(mapData, HashMap.class);
 		}
 		catch (UnknownHostException e)
-		{
-			e.printStackTrace();
-		}
-		catch (IOException e)
 		{
 			e.printStackTrace();
 		}
@@ -274,17 +265,6 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 		};
 	}
 
-
-	@Bean
-	@Scope(scopeName = WebApplicationContext.SCOPE_REQUEST,
-			proxyMode = ScopedProxyMode.TARGET_CLASS)
-	public AccessToken getAccessToken() {
-		HttpServletRequest request =
-				((ServletRequestAttributes) RequestContextHolder
-						.currentRequestAttributes()).getRequest();
-		return ((KeycloakPrincipal) request.getUserPrincipal())
-				.getKeycloakSecurityContext().getToken();
-	}
 
 
 
