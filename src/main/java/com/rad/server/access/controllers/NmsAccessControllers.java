@@ -90,11 +90,23 @@ public class NmsAccessControllers
 					realms.add(tenantRepository.findById(tenant).get().getName());
 				}
 				else{
-					throw new InstanceAlreadyExistsException();
+					throw new NotFoundException();
 				}
 			}
 				if(roleRepository.existsById(user.getRoleID())){
 					Role role=roleRepository.findById(user.getRoleID()).get();
+					User exists=getUserFromRepositoryByUsername(user.getUserName());
+					if(exists!=null) {
+						if(exists.getTenantID().containsAll(user.getTenantID()))
+							throw new InstanceAlreadyExistsException();
+						else{
+							user.setId(exists.getId());
+							for(long id:exists.getTenantID()){
+								if(!user.getTenantID().contains(id))
+									user.getTenantID().add(id);
+							}
+						}
+					}
 					userRepository.save(user);
 					userService.addKeycloakUser(user,realms,role.getName());
 					return user;
@@ -125,7 +137,7 @@ public class NmsAccessControllers
 		User user;
 		user=getUserFromRepository(id);
 		if(!isTokenUserFromSameTenant(user))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"user and token not from same tenant").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"keycloak user not authorized").getHttpResponse();
 		if(user!=null) {
 			if(roleRepository.existsById(user.getRoleID())){
 				Role userRole=roleRepository.findById(user.getRoleID()).get();
@@ -149,18 +161,19 @@ public class NmsAccessControllers
 
 	@PutMapping("/users/{id}")
 	@ResponseBody
-	public User updateUser(@PathVariable long id,@RequestBody User user){
+	public ResponseEntity<?> updateUser(@PathVariable long id,@RequestBody User user){
 		User oldUser=getUserFromRepository(id);
 		if(!isTokenUserFromSameTenant(oldUser))
-			return null;
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"keycloak user not authorized").getHttpResponse();
 		if(oldUser==null)
-			return null;
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"User doesnt exists").getHttpResponse();
 		User newUser=new User(user);
 		newUser.setId(id);
 		newUser.setUserName(oldUser.getUserName());
 		userService.updateKeycloakUser(user,oldUser.getUserName());
 		userRepository.save(newUser);
-		return user;
+		ResponseEntity<User> result = new ResponseEntity<>(user,HttpStatus.ACCEPTED);
+		return new HttpResponse(result).getHttpResponse();
 	}
 	
 	@GetMapping("/roles")
@@ -332,6 +345,15 @@ public class NmsAccessControllers
 		return userExists.orElse(null);
 	}
 
+	private User getUserFromRepositoryByUsername(String username) {
+		for(User user:userRepository.findAll()){
+			if(user.getUserName().equals(username))
+				return getUserFromRepository(user.getId());
+		}
+		return null;
+	}
+
+
 	private Tenant getTenantFromRepository(long id) {
 		Optional<Tenant> tenantExists = tenantRepository.findById(id);
 		return tenantExists.orElse(null);
@@ -351,11 +373,15 @@ public class NmsAccessControllers
 	}
 
 	private boolean isTokenUserFromSameTenant(User user){
-		User tokenUser=getUserFromToken(user.getUserName());
+		User tokenUser=getUserFromToken(token.getPreferredUsername());
 		if(tokenUser==null)
 			return false;
 		Role tokenRole=getRoleFromRepository(tokenUser.getRoleID());
 		if(tokenRole==null)
+			return false;
+		if(tokenRole.getName().equals("Admin"))
+			return true;
+		if(tokenRole.getName().equals("User"))
 			return false;
 		if(tokenRole.getName().equals("Region-Admin")){
 			if(!tokenUser.getTenantID().containsAll(user.getTenantID())){

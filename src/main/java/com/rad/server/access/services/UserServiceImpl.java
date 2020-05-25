@@ -114,12 +114,19 @@ public class UserServiceImpl implements UserService {
 
     public void updateKeycloakUser(User user ,String userName){
         Keycloak keycloak=getKeycloakInstance();
+        List<CredentialRepresentation> credentials=new ArrayList<>();
         RealmResource realmResource = keycloak.realm("Admin");
         UsersResource users =  realmResource.users();
         UserRepresentation userRep=users.search(userName).get(0);
         userRep.setEmail(user.getEmail());
         userRep.setFirstName(user.getFirstName());
         userRep.setLastName(user.getLastName());
+        CredentialRepresentation credentialRepresentation=new CredentialRepresentation();
+        credentialRepresentation.setType(CredentialRepresentation.PASSWORD);
+        credentialRepresentation.setValue(user.getPassword());
+        credentialRepresentation.setTemporary(false);
+        credentials.add(credentialRepresentation);
+        userRep.setCredentials(credentials);
         UserResource updateUser=users.get(userRep.getId());
         updateUser.update(userRep);
     }
