@@ -19,7 +19,6 @@ public interface TenantService
 {
     void addKeycloakTenant(Tenant Tenant);
 
-    List<User> getKeycloakTenants();
 
     void deleteKeycloakTenant(String name);
 

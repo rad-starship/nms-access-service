@@ -64,6 +64,14 @@ public class NmsAccessControllers
 		return users;
 	}
 
+
+	/**
+	 * This function returns the continent list that the logged in user is allowed to watch in health service
+	 * @param headers
+	 * @param username
+	 * @return
+	 */
+
 	@GetMapping("/users/getTokenTenants/{username}")
 	@ResponseBody
 	public ArrayList<String> getUserToken(@RequestHeader HttpHeaders headers,@PathVariable String username)
@@ -79,6 +87,11 @@ public class NmsAccessControllers
 		return tenants;
 	}
 
+	/**
+	 * This function adds a new user to the repository and to keycloak
+	 * @param user
+	 * @return
+	 */
 	@PostMapping("/users")
 	@ResponseBody
 	public Object addUser(@RequestBody User user)
@@ -134,6 +147,12 @@ public class NmsAccessControllers
 		}
 	}
 
+	/**
+	 * This function deletes a user from the repository and from keycloak by id if it exists
+	 * @param id
+	 * @return
+	 */
+
 	@DeleteMapping("/users/{id}")
 	@ResponseBody
 	public ResponseEntity<?> deleteUser(@PathVariable long id){
@@ -162,6 +181,13 @@ public class NmsAccessControllers
 			return new HttpResponse(HttpStatus.NO_CONTENT,"user Doesnt Exist").getHttpResponse();
 	}
 
+
+	/**
+	 * This function updates a registered user by id if it exists
+	 * @param id
+	 * @param user The new user details
+	 * @return
+	 */
 	@PutMapping("/users/{id}")
 	@ResponseBody
 	public ResponseEntity<?> updateUser(@PathVariable long id,@RequestBody User user){
@@ -190,6 +216,12 @@ public class NmsAccessControllers
 		return roles;
 	}
 
+
+	/**
+	 * This function adds a new role to the repository, and to all of the keycloak tenants
+	 * @param role
+	 * @return
+	 */
 	@PostMapping("/roles")
 	@ResponseBody
 	public Role addRole(@RequestBody Role role)
@@ -200,19 +232,30 @@ public class NmsAccessControllers
 		return role;
 	}
 
-
+	/**
+	 * This function updates an existing role by id if it exists
+	 * @param roleId
+	 * @param roleDetails The new role details
+	 * @return
+	 */
 	@PutMapping("/roles/{id}")
 	@ResponseBody
 	public Role updateRole(@PathVariable(value = "id") Long roleId,
-												   @Valid @RequestBody Role roleDetailes) {
+												   @Valid @RequestBody Role roleDetails) {
 		try {
-			return roleService.updateRole(roleId, roleDetailes);
+			return roleService.updateRole(roleId, roleDetails);
 		}
 			catch(Exception e){
 			return new Role("NotFound");
 		}
 	}
 
+
+	/**
+	 * This function deletes a role from the repository and the keycloak servers by role name
+	 * @param roleName
+	 * @return
+	 */
 	@DeleteMapping("/roles/{name}")
 	@ResponseBody
 	public ResponseEntity<?> deleteRole(@PathVariable(value = "name") String roleName){
@@ -232,7 +275,11 @@ public class NmsAccessControllers
 
 
 }
-
+	/**
+	 * This function deletes a role from the repository and the keycloak servers by role ID
+	 * @param roleId
+	 * @return
+	 */
 	@DeleteMapping("/rolesid/{id}")
 	@ResponseBody
 	public ResponseEntity<?> deleteRole(@PathVariable(value = "id") long roleId){
@@ -272,6 +319,12 @@ public class NmsAccessControllers
 		return tenants;
 	}
 
+
+	/**
+	 * This function adds a new tenant to the repository and to the keycloak servers
+	 * @param tenant
+	 * @return
+	 */
 	@PostMapping("/tenants")
 	@ResponseBody
 	public Object addTenant(@RequestBody Tenant tenant)
@@ -290,23 +343,41 @@ public class NmsAccessControllers
 		}
 	}
 
+
+	/**
+	 * This function deletes a tenant from the repository and the keycloak servers by ID, if it exists
+	 * @param id
+	 * @return
+	 */
 	@DeleteMapping("/tenants/{id}")
 	@ResponseBody
 	public Object deleteTenant(@PathVariable long id){
 		Tenant tenant;
 		tenant=getTenantFromRepository(id);
+		boolean admin=false;
 		if(tenant!=null) {
 			if(tenant.getName().equals("Admin"))
 				return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
+			User tokenUser=getUserFromToken(token.getPreferredUsername());
+			if(!getRoleFromRepository(tokenUser.getRoleID()).getPermissions().contains("all")){
+				return new HttpResponse(HttpStatus.BAD_REQUEST,"Keycloak user unauthorized").getHttpResponse();
+			}
 			tenantRepository.delete(tenant);
 			tenantService.deleteKeycloakTenant(tenant.getName());
 			ResponseEntity<Tenant> result = new ResponseEntity<Tenant>(tenant,HttpStatus.ACCEPTED);
 			return result;
 		}
 		else
-			return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"wrong tenant id");
 	}
 
+
+	/**
+	 * This function updates an existing tenant by ID
+	 * @param id
+	 * @param tenant The new tenant details
+	 * @return
+	 */
 	@PutMapping("/tenants/{id}")
 	@ResponseBody
 	public Object updateTenant(@PathVariable long id,@RequestBody Tenant tenant){
@@ -375,6 +446,12 @@ public class NmsAccessControllers
 		return null;
 	}
 
+
+	/**
+	 * This function checks if the logged in user is from the same tenant to enforce requests authorization such as DELETE, PUT, POST
+	 * @param user
+	 * @return
+	 */
 	private boolean isTokenUserFromSameTenant(User user){
 		User tokenUser=getUserFromToken(token.getPreferredUsername());
 		if(tokenUser==null)

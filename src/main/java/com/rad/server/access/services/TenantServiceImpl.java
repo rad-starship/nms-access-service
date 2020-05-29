@@ -34,7 +34,10 @@ public class TenantServiceImpl implements TenantService {
     final String dataUri = "http://localhost:8082/*";
     final String nmsUri = "http://localhost:8081/*";
 
-
+    /**
+     * This function returns the keycloak server
+     * @return
+     */
     private Keycloak getKeycloakInstance(){
         return Keycloak.getInstance(
 
@@ -45,7 +48,10 @@ public class TenantServiceImpl implements TenantService {
                 prop.getCliendId());
     }
 
-
+    /**
+     * This function creates a new tenant(realm) in the keycloak server and configures it to match the current settings
+     * @param tenant
+     */
     @Override
     public void addKeycloakTenant(Tenant tenant) {
         Keycloak keycloak=getKeycloakInstance();
@@ -72,6 +78,11 @@ public class TenantServiceImpl implements TenantService {
             setOTP(tenant.getName());
     }
 
+
+    /**
+     * This function sets OTP authentication for the keycloak tenant
+     * @param realm
+     */
     private void setOTP(String realm){
         Keycloak keycloak=getKeycloakInstance();
         List<RequiredActionProviderRepresentation> requiredActionProviderRepresentations;
@@ -86,6 +97,11 @@ public class TenantServiceImpl implements TenantService {
         }
     }
 
+
+    /**
+     * This function adds all of the needed clients to the keycloak tenant
+     * @param realm
+     */
     private void addAllClients(String realm) {
         //CORONA-WEB-CLIENT
         ProtocolMapperRepresentation protocolMapperRepresentation=new ProtocolMapperRepresentation();
@@ -128,17 +144,21 @@ public class TenantServiceImpl implements TenantService {
         return output;}
     }
 
-    @Override
-    public List<User> getKeycloakTenants() {
-        return null;
-    }
-
+    /**
+     * This function removes the keycloak tenant by name
+     * @param name
+     */
     @Override
     public void deleteKeycloakTenant(String name) {
         Keycloak keycloak=getKeycloakInstance();
         keycloak.realms().realm(name).remove();
     }
 
+    /**
+     * This function updates an existing keycloak tenant to match the new tenant
+     * @param tenant The new tenant
+     * @param name
+     */
     @Override
     public void updateKeycloakTenant(Tenant tenant, String name) {
         Keycloak keycloak=getKeycloakInstance();
@@ -147,6 +167,11 @@ public class TenantServiceImpl implements TenantService {
         keycloak.realms().realm(name).update(realm);
     }
 
+    /**
+     * This function checks if the tenant exists in the keycloak servers
+     * @param tenant
+     * @return
+     */
     @Override
     public boolean tenantExists(Tenant tenant){
         Keycloak keycloak=getKeycloakInstance();
@@ -159,6 +184,11 @@ public class TenantServiceImpl implements TenantService {
         return false;
     }
 
+    /**
+     * This function initializes the keycloak tenants from repository and the updates the repository if there are
+     * tenants in keycloak that doesnt exist in the repository
+     * @param repository
+     */
     public void initKeycloakTenants(TenantRepository repository){
         Keycloak keycloak=getKeycloakInstance();
         for (Tenant t:repository.findAll()) {
