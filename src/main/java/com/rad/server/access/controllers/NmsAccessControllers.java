@@ -71,7 +71,10 @@ public class NmsAccessControllers
 		User tokenUser=getUserFromToken(username);
 		ArrayList<String> tenants=new ArrayList<>();
 		for(long id:tokenUser.getTenantID()){
-			tenants.add(tenantRepository.findById(id).get().getName());
+			for(String continent:tenantRepository.findById(id).get().getContinents()){
+				if(!tenants.contains(continent))
+					tenants.add(continent);
+			}
 		}
 		return tenants;
 	}
@@ -313,7 +316,7 @@ public class NmsAccessControllers
 			response.put("Data","The tenant does not exist");
 			return response;
 		}
-		Tenant newTenant=new Tenant(tenant.getName());
+		Tenant newTenant=new Tenant(tenant.getName(),tenant.getContinents());
 		newTenant.setId(id);
 		tenantService.updateKeycloakTenant(tenant,oldTenant.getName());
 		tenantRepository.save(newTenant);
