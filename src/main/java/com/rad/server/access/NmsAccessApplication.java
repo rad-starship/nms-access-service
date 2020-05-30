@@ -93,12 +93,12 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 			repository.findAll().forEach(System.out::println);
 			tenantService.initKeycloakTenants(repository);
 		};
-	}	
-	
-	/**
-	 * Populate the database with a few User entities
-	 */
+	}
 
+
+	/**
+	 * Init all roles of the system. first init the permissions which are not composite roles and then init the actual roles.
+	 */
 	@Bean
 	CommandLineRunner roleInit(RoleRepository repository, RoleService roleService)
 	{

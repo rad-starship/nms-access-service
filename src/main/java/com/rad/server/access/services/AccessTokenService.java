@@ -18,6 +18,11 @@ public class AccessTokenService {
     @Autowired
     private KeycloakAdminProperties prop;
 
+    /**
+     * This function access to keycloak server to get Token from login details.
+     * @param loginEntity - an object contains all information for loin
+     * @return On success returns the token, null on failure.
+     */
     public AccessTokenResponse getAccessToken(LoginEntity loginEntity){
         try{
         Keycloak keycloak  = Keycloak.getInstance(

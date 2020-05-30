@@ -33,7 +33,12 @@ public class SettingsServiceImpl implements SettingsService {
                 prop.getPassword(), // ​​administrator password
                 prop.getCliendId());
     }
-    
+
+    /**
+     * The function goes over the Json received in the request and parse it to Settings Object.
+     * @param settings - Json from request body, some fields may be missing.
+     * @return Settings object with null on missing fields.
+     */
     @Override
     public Settings parseSettings(Object settings)  {
 
@@ -105,6 +110,11 @@ public class SettingsServiceImpl implements SettingsService {
 
     }
 
+    /**
+     * Runs over the Settings object and for each non null field apply relevant info in keycloak
+     * NOTE: apply settings on all keycloak realms.
+     * @param settings1 - Settings to be applied.
+     */
     @Override
     public void applySettings(Settings settings1) {
         //For now updates all realms. maybe change to specific one later..

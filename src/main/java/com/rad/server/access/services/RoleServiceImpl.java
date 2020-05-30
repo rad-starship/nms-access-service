@@ -9,6 +9,7 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.RoleResource;
 import org.keycloak.admin.client.resource.RolesResource;
+import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,9 @@ public class RoleServiceImpl implements RoleService {
 
     @Autowired
     private KeycloakAdminProperties prop;
+
+    @Autowired
+    private AccessToken token;
 
 
     private Keycloak getKeycloak() {
@@ -54,6 +58,10 @@ public class RoleServiceImpl implements RoleService {
         return getNonComposites();
     }
 
+    /**
+     * The function goes over all roles on RoleRepository and get all non composite ones.
+     * @return list of maps, each map contains role name and id.
+     */
     private List<Map<String, String>> getNonComposites() {
         List<Map<String,String>> output = new ArrayList<>();
         for (Role role :roleRepository.findAll()){
@@ -68,11 +76,15 @@ public class RoleServiceImpl implements RoleService {
 
     }
 
+    /**
+     * Save role on repository and keycloak, on server init. hence add role to all realms.
+     * @param role - the role that need to be saved
+     */
     @Override
     public void initRole(Role role) {
         Role r =roleRepository.save(role);
         try{
-            addKeycloakRole(role);
+            addAllKeycloakRole(role);
         }
         catch(Exception e){
             System.out.println(e.getMessage());
@@ -80,6 +92,10 @@ public class RoleServiceImpl implements RoleService {
 
     }
 
+    /**
+     * The function goes over RoleRepository and finds all composite roles
+     * @return list of composite roles.
+     */
     private List<Role> getComposites() {
         List<Role> output = new LinkedList<>();
         for (Role role :roleRepository.findAll()){
@@ -90,11 +106,15 @@ public class RoleServiceImpl implements RoleService {
         return output;
     }
 
+    /**
+     * Try to add new role into repository and keycloak for specific token realm.
+     * @param role - role to be added.
+     */
     @Override
     public void addRole(Role role) {
         if(!haveInRepo(role)){
             try {
-                addKeycloakRole(role);
+                addRoleToTenant(role,getRealmFromToken());
                 roleRepository.save(role);
             }
             catch (ClientErrorException e){
@@ -103,6 +123,7 @@ public class RoleServiceImpl implements RoleService {
         }
 
     }
+
 
     @Override
     public void deleteRole(Role role) {
@@ -132,7 +153,11 @@ public class RoleServiceImpl implements RoleService {
         return updatedRole;
     }
 
-    //Repo search  by role name
+    /**
+     * Search Specific role in RoleRepository by its name.
+     * @param role - the role we look for
+     * @return The Role representation inside the repository , null if not exist.
+     */
     private Role findInRepo(Role role) {
         List<Role> roles = (List<Role>) roleRepository.findAll();
         for(Role r: roles){
@@ -142,26 +167,33 @@ public class RoleServiceImpl implements RoleService {
         return null;
     }
 
-    private  boolean  haveInRepo(Role newRole) {
-        List<Role> repo = (List<Role>) roleRepository.findAll();
-        for(Role r : repo){
-            if (r.getName().equals(newRole.getName()))
-                return true;
-        }
-        return false;
+    /**
+     * The function receives role and returns true if he is inside Role repository, return false otherwise.
+     */
+    private  boolean  haveInRepo(Role role) {
+        return findInRepo(role) != null;
     }
-    
-    //Update data in repo
+
+    /**
+     * Updates role data in repository.
+     * @param newRole - the updated data
+     * @param oldRole - the old data
+     * @return the updated Role
+     */
     private Role updateRepo(Role newRole, Role oldRole) {
         oldRole.setName(newRole.getName());
         oldRole.addPermission(newRole.getPermissions());
         return roleRepository.save(oldRole);
     }
 
-    //Keycloack CRUD functions
+    /**
+     * The function update Role repository by accessing keycloak and get all roles of current realm
+     */
     public  void getKeycloakRoles() {
+
         Keycloak keycloak = getKeycloak();
-        RealmResource relamResource = keycloak.realm("Admin");
+        String realm = getRealmFromToken();
+        RealmResource relamResource = keycloak.realm(realm);
         RolesResource roles =  relamResource.roles();
         roles.list().forEach(role->
         {
@@ -170,8 +202,6 @@ public class RoleServiceImpl implements RoleService {
             if(role.isComposite()){
                 List<String> permissions = new LinkedList<>();
                 for (RoleRepresentation permission :roles.get(role.getName()).getRoleComposites()){
-                   // Role compositeRole = new Role(permission.getId(),permission.getName());
-                   // compositeRole = findInRepo(compositeRole);
                     permissions.add(permission.getName());
                 }
                 newRole.addPermission(permissions);
@@ -183,28 +213,58 @@ public class RoleServiceImpl implements RoleService {
         });
     }
 
-    public void addKeycloakRole(Role role) {
-        Keycloak keycloak = getKeycloak();
-        for (Tenant t:tenantRepository.findAll()) {
-            RealmResource realmResource = keycloak.realm(t.getName());
-            RoleRepresentation newRole = new RoleRepresentation();
-            try {
-                List<RoleRepresentation> permissions = getPermissions(role.getPermissions(),t.getName());
-                newRole.setName(role.getName());
-                realmResource.roles().create(newRole);
-                if (permissions.size()>0) {
-                    realmResource.roles().get(role.getName()).toRepresentation().setComposite(true);
-                    realmResource.roles().get(role.getName()).addComposites(permissions);
-                }
-            }
-            catch (Exception e){
-                System.out.println("Roles Already Exists On Keycloak");
-            }
-        }
-
+    /**
+     * This function get realm out of the access token from issuer field
+     * @return realm name.
+     */
+    private String getRealmFromToken() {
+        String[] headers = token.getIssuer().split("/");
+        String realm = headers[headers.length - 1];
+        return realm;
 
     }
 
+    /**
+     * Add keycloak role to all realms
+     * @param role - the role to add.
+     */
+    public void addAllKeycloakRole(Role role) {
+
+        for (Tenant t:tenantRepository.findAll()) {
+            addRoleToTenant(role, t.getName());
+        }
+
+    }
+
+    /**
+     *  Add keycloak role to specific realm.
+     * @param role - the role to add.
+     * @param tenant - the realm name.
+     */
+    private void addRoleToTenant(Role role, String tenant) {
+        Keycloak keycloak = getKeycloak();
+        RealmResource realmResource = keycloak.realm(tenant);
+        RoleRepresentation newRole = new RoleRepresentation();
+        try {
+            List<RoleRepresentation> permissions = getPermissions(role.getPermissions(),tenant);
+            newRole.setName(role.getName());
+            realmResource.roles().create(newRole);
+            if (permissions.size()>0) {
+                realmResource.roles().get(role.getName()).toRepresentation().setComposite(true);
+                realmResource.roles().get(role.getName()).addComposites(permissions);
+            }
+        }
+        catch (Exception e){
+            System.out.println("Roles Already Exists On Keycloak");
+        }
+    }
+
+    /**
+     * get all keycloak representation of permissions in specific tenant
+     * @param permissions - list of inside server permissions.
+     * @param tenant - realm name.
+     * @return list of keycloak role representation of the permissions.
+     */
     private List<RoleRepresentation> getPermissions(List<String> permissions,String tenant) {
         Keycloak keycloak = getKeycloak();
         RealmResource relamResource = keycloak.realm(tenant);
@@ -216,10 +276,14 @@ public class RoleServiceImpl implements RoleService {
         return output;
     }
 
-    //TODO:Update Function to work with multi tenants
+    /**
+     * Update keycloak role on specific tenant
+     * @param role - the old role.
+     * @param update - the updated role.
+     */
     private void updateKeycloakRole(Role role,Role update) {
         Keycloak keycloak = getKeycloak();
-        RealmResource relamResource = keycloak.realm("Admin");
+        RealmResource relamResource = keycloak.realm(getRealmFromToken());
         RolesResource roles =  relamResource.roles();
         RoleResource beforeRole  = roles.get(role.getName());
         RoleRepresentation newRep = new RoleRepresentation();
@@ -236,9 +300,13 @@ public class RoleServiceImpl implements RoleService {
 
     }
 
+    /**
+     * Delete keycloak role of specific realm
+     * @param role - the role to be deleted.
+     */
     private void deleteKeycloakRole(Role role) {
         Keycloak keycloak = getKeycloak();
-        RealmResource realmResource = keycloak.realm("Admin");
+        RealmResource realmResource = keycloak.realm(getRealmFromToken());
         realmResource.roles().deleteRole(role.getName());
     }
 

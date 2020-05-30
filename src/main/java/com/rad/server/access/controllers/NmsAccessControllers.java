@@ -414,11 +414,21 @@ public class NmsAccessControllers
 	}
 
 
+	/**
+	 * Function that returns user from userRepository
+	 * @param id - id of the wanted user
+	 * @return User represents the wanted user, null if user not exist.
+	 */
 	private User getUserFromRepository(long id) {
 		Optional<User> userExists = userRepository.findById(id);
 		return userExists.orElse(null);
 	}
 
+	/**
+	 * Function that returns user from userRepository
+	 * @param username - username of the wanted user
+	 * @return User represents the wanted user, null if user not exist.
+	 */
 	private User getUserFromRepositoryByUsername(String username) {
 		for(User user:userRepository.findAll()){
 			if(user.getUserName().equals(username))
@@ -428,11 +438,21 @@ public class NmsAccessControllers
 	}
 
 
+	/**
+	 * Function that returns tenant from tenantRepository
+	 * @param id - id of the wanted tenant
+	 * @return Tenant represents the wanted tenant, null if tenant not exist.
+	 */
 	private Tenant getTenantFromRepository(long id) {
 		Optional<Tenant> tenantExists = tenantRepository.findById(id);
 		return tenantExists.orElse(null);
 	}
 
+	/**
+	 * Function that returns role from RoleRepository
+	 * @param id - id of the wanted role
+	 * @return Role represents the wanted role, null if role not exist.
+	 */
 	private Role getRoleFromRepository(long id) {
 		Optional<Role> roleExists = roleRepository.findById(id);
 		return roleExists.orElse(null);
