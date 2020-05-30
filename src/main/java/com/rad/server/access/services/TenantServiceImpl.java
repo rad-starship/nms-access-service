@@ -26,6 +26,9 @@ public class TenantServiceImpl implements TenantService {
     private KeycloakAdminProperties prop;
 
     @Autowired
+    private  SettingsService settingsService;
+
+    @Autowired
     private Settings settings;
 
     private Map<String,ClientRepresentation> clientRepresentationMap = new ConcurrentHashMap<>();
@@ -59,10 +62,7 @@ public class TenantServiceImpl implements TenantService {
         realm.setRealm(tenant.getName());
         realm.setEnabled(true);
         //realm.setPasswordPolicy(password);
-        realm.setSsoSessionIdleTimeout(token.getSsoSessionIdle()*60);
-        realm.setSsoSessionMaxLifespan(token.getSsoSessionMax()*60);
-        realm.setOfflineSessionIdleTimeout(token.getOfflineSessionIdle()*60);
-        realm.setAccessTokenLifespan(token.getAccessTokenLifespan()*60);
+        settingsService.applyTokenToRealm(token, realm);
         realm.setOtpPolicyDigits(otpPolicy.getNumberOfDigits());
         realm.setOtpPolicyLookAheadWindow(otpPolicy.getOptTokenPeriod());
         //realm.setOtpPolicyType(otpPolicy.getOptType());
@@ -71,6 +71,8 @@ public class TenantServiceImpl implements TenantService {
         if(otpPolicy.isEnabled())
             setOTP(tenant.getName());
     }
+
+
 
     private void setOTP(String realm){
         Keycloak keycloak=getKeycloakInstance();

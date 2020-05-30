@@ -77,6 +77,7 @@ public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter
                 .antMatchers(HttpMethod.POST,"/tenants/*").hasAnyRole("Admin","all")
                 .antMatchers(HttpMethod.PUT,"/tenants/*").hasAnyRole("Admin","all")
                 .antMatchers(HttpMethod.DELETE,"/tenants/*").hasAnyRole("Admin","all")
+                .antMatchers(HttpMethod.POST,"/settings/*").hasAnyRole("Admin","all")
                 .antMatchers(HttpMethod.GET,"/corona/*").permitAll();
 
     }

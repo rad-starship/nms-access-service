@@ -1,8 +1,14 @@
 package com.rad.server.access.services;
 
+import com.rad.server.access.componenets.KeycloakAdminProperties;
+import com.rad.server.access.entities.Tenant;
 import com.rad.server.access.entities.settings.*;
+import com.rad.server.access.repositories.TenantRepository;
 import org.apache.tomcat.util.json.JSONParser;
 import org.apache.tomcat.util.json.ParseException;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -10,6 +16,24 @@ import java.util.Map;
 
 @Service
 public class SettingsServiceImpl implements SettingsService {
+
+    @Autowired
+    private KeycloakAdminProperties prop;
+    
+    @Autowired
+    private TenantRepository repository;
+
+    
+    private Keycloak getKeycloakInstance(){
+        return Keycloak.getInstance(
+
+                prop.getServerUrl(),// keycloak address
+                prop.getRelm(), // ​​specify Realm master
+                prop.getUsername(), // ​​administrator account
+                prop.getPassword(), // ​​administrator password
+                prop.getCliendId());
+    }
+    
     @Override
     public Settings parseSettings(Object settings)  {
 
@@ -83,17 +107,70 @@ public class SettingsServiceImpl implements SettingsService {
 
     @Override
     public void applySettings(Settings settings1) {
+        //For now updates all realms. maybe change to specific one later..
         Authentication authentication = settings1.getAuthentication();
         if(authentication!=null){
             if(authentication.getSocialLogin()!= null){
-                String provider = authentication.getSocialLogin().getIdentityProvider();
-                if(provider.equals("google")){
-                    setGoogleProvider();
-                }
-                if(provider.equals("facebook")){
-                    setFacebookProvider();
-                }
+                applySocialProvider(authentication.getSocialLogin());
             }
+            if(authentication.getPasswordPolicy() != null){
+                applyPasswordPolicy(authentication.getPasswordPolicy());
+            }
+            if(authentication.getToken()!=null){
+                applyToken(authentication.getToken());
+            }
+            if(authentication.getOtpPolicy()!=null){
+                applyOtp(authentication.getOtpPolicy());
+            }
+        }
+    }
+
+    private void applyOtp(otpPolicy otpPolicy) {
+        Keycloak keycloak = getKeycloakInstance();
+
+        for(Tenant tenant: repository.findAll()){
+
+            RealmRepresentation realmRepresentation =keycloak.realm(tenant.getName()).toRepresentation();
+            realmRepresentation.setOtpPolicyDigits(otpPolicy.getNumberOfDigits());
+            realmRepresentation.setOtpPolicyLookAheadWindow(otpPolicy.getOptTokenPeriod());
+            realmRepresentation.setOtpPolicyType(otpPolicy.getOptType());
+            keycloak.realm(tenant.getName()).update(realmRepresentation);
+        }
+    }
+
+    private void applyToken(Token token) {
+        Keycloak keycloak = getKeycloakInstance();
+
+        for(Tenant tenant: repository.findAll()){
+
+            RealmRepresentation realmRepresentation =keycloak.realm(tenant.getName()).toRepresentation();
+            applyTokenToRealm(token,realmRepresentation);
+            keycloak.realm(tenant.getName()).update(realmRepresentation);
+        }
+    }
+
+    private void applyPasswordPolicy(PasswordPolicy passwordPolicy) {
+        String password="length("+passwordPolicy.getMinimumLength()+") and forceExpiredPasswordChange("+passwordPolicy.getExpirePassword()+") and digits("+passwordPolicy.getDigits()+") and passwordHistory("+passwordPolicy.getNotRecentlyUsed()+")";
+        if(passwordPolicy.isNotUsername())
+            password+=" and notUsername(undefined)";
+        Keycloak keycloak = getKeycloakInstance();
+
+        for(Tenant tenant: repository.findAll()){
+            
+            RealmRepresentation realmRepresentation =keycloak.realm(tenant.getName()).toRepresentation();
+            realmRepresentation.setPasswordPolicy(password);
+            keycloak.realm(tenant.getName()).update(realmRepresentation);
+        }
+        
+    }
+
+    private void applySocialProvider(SocialLogin sLogin) {
+        String provider = sLogin.getIdentityProvider();
+        if(provider.equals("google")){
+            setGoogleProvider();
+        }
+        if(provider.equals("facebook")){
+            setFacebookProvider();
         }
     }
 
@@ -101,5 +178,12 @@ public class SettingsServiceImpl implements SettingsService {
     }
 
     private void setGoogleProvider() {
+    }
+
+    public void applyTokenToRealm(Token token, RealmRepresentation realm) {
+        realm.setSsoSessionIdleTimeout(token.getSsoSessionIdle()*60);
+        realm.setSsoSessionMaxLifespan(token.getSsoSessionMax()*60);
+        realm.setOfflineSessionIdleTimeout(token.getOfflineSessionIdle()*60);
+        realm.setAccessTokenLifespan(token.getAccessTokenLifespan()*60);
     }
 }
