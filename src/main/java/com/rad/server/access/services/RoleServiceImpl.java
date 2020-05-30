@@ -48,8 +48,8 @@ public class RoleServiceImpl implements RoleService {
     //Overridable CRUD functions:
     @Override
     public  List<Role> getRoles() {
-         getKeycloakRoles();
-         return getComposites();
+         List<Role> roles = getKeycloakRoles();
+         return getComposites(roles);
     }
 
     @Override
@@ -93,12 +93,13 @@ public class RoleServiceImpl implements RoleService {
     }
 
     /**
-     * The function goes over RoleRepository and finds all composite roles
+     * The function goes over allRoles and finds all composite roles
+     * @param allRoles - list of roles
      * @return list of composite roles.
      */
-    private List<Role> getComposites() {
+    private List<Role> getComposites(List<Role> allRoles) {
         List<Role> output = new LinkedList<>();
-        for (Role role :roleRepository.findAll()){
+        for (Role role :allRoles){
             if (role.getPermissions().size()>0){
                 output.add(role);
             }
@@ -188,9 +189,10 @@ public class RoleServiceImpl implements RoleService {
 
     /**
      * The function update Role repository by accessing keycloak and get all roles of current realm
+     * @return list of roles form relevant realm.
      */
-    public  void getKeycloakRoles() {
-
+    public List<Role> getKeycloakRoles() {
+        List<Role> rolesInKc = new ArrayList<>();
         Keycloak keycloak = getKeycloak();
         String realm = getRealmFromToken();
         RealmResource relamResource = keycloak.realm(realm);
@@ -210,7 +212,9 @@ public class RoleServiceImpl implements RoleService {
                 if (!haveInRepo(newRole))
                     roleRepository.save(newRole);
             }
+            rolesInKc.add(findInRepo(newRole));
         });
+        return rolesInKc;
     }
 
     /**

@@ -413,6 +413,11 @@ public class NmsAccessControllers
 		return accessTokenService.getAccessToken(loginEntity);
 	}
 
+	@PostMapping("/logout")
+	@ResponseBody
+	public Object logout(@RequestBody String refreshToken){
+		return accessTokenService.logout(refreshToken);
+	}
 
 	/**
 	 * Function that returns user from userRepository
