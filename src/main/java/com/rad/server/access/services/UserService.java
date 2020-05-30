@@ -20,8 +20,6 @@ public interface UserService
 {
     void addKeycloakUser(User user, ArrayList<String> tenant, String role);
 
-    List<User> getKeycloakUsers();
-
     void deleteKeycloakUser(String username,String tenant);
 
     void updateKeycloakUser(User user,String userName);

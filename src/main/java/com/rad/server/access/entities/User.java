@@ -22,7 +22,7 @@ public class User
 	private String	email;
 	@Column(unique=true)
 	private String	userName;
-	@JsonIgnore
+	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	private String password;
 	private long roleID;
 	@ElementCollection(fetch = FetchType.EAGER)

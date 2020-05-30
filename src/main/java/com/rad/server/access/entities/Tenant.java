@@ -6,6 +6,7 @@ package com.rad.server.access.entities;
 import org.hibernate.validator.constraints.UniqueElements;
 
 import javax.persistence.*;
+import java.util.List;
 
 /**
  * @author raz_o
@@ -19,15 +20,23 @@ public class Tenant
 	private long	id;
 	@Column(unique = true)
 	private String	name;
+	@ElementCollection(fetch = FetchType.EAGER)
+	private List<String> continents;
 
 	public Tenant()
 	{
 		
 	}
-	
+
 	public Tenant(String name)
 	{
 		this.name = name;
+	}
+	
+	public Tenant(String name,List<String> continents)
+	{
+		this.name = name;
+		this.continents=continents;
 	}
 
 	public long getId()
@@ -43,6 +52,14 @@ public class Tenant
 	public String getName()
 	{
 		return this.name;
+	}
+
+	public List<String> getContinents() {
+		return continents;
+	}
+
+	public void setContinents(List<String> continents) {
+		this.continents = continents;
 	}
 
 	public void setName(String name) {

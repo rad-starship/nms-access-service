@@ -54,15 +54,11 @@ public class UserServiceImpl implements UserService {
                 prop.getCliendId());
     }
 
-    @Override
-    public List<User> getKeycloakUsers() {
-        List<User> output = new LinkedList<>();
-        Keycloak keycloak = getKeycloakInstance();
-        RealmResource realmResource = keycloak.realm("Admin");
-        UsersResource users =  realmResource.users();
-        users.list().forEach(user->output.add(new User(user.getFirstName(),user.getLastName(),user.getEmail(),user.getUsername())));
-        return output;
-    }
+    /**
+     * This function deletes the user from the keycloak servers by username and realm
+     * @param userName The deleted username
+     * @param tenant The tenant the user belongs to
+     */
 
     @Override
     public void deleteKeycloakUser(String userName,String tenant){
@@ -72,6 +68,14 @@ public class UserServiceImpl implements UserService {
         users.delete(users.search(userName).get(0).getId());
     }
 
+
+    /**
+     * This function adds a new user to the keycloak serve, adds his permissions,
+     * and applies the necessary settings
+     * @param user
+     * @param tenants
+     * @param role
+     */
     @Override
     public void addKeycloakUser(User user,ArrayList<String> tenants,String role) {
         Keycloak keycloak = getKeycloakInstance();
@@ -112,18 +116,35 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    /**
+     * This function updates an existing user in the keycloak server by username
+     * @param user
+     * @param userName
+     */
     public void updateKeycloakUser(User user ,String userName){
         Keycloak keycloak=getKeycloakInstance();
+        List<CredentialRepresentation> credentials=new ArrayList<>();
         RealmResource realmResource = keycloak.realm("Admin");
         UsersResource users =  realmResource.users();
         UserRepresentation userRep=users.search(userName).get(0);
         userRep.setEmail(user.getEmail());
         userRep.setFirstName(user.getFirstName());
         userRep.setLastName(user.getLastName());
+        CredentialRepresentation credentialRepresentation=new CredentialRepresentation();
+        credentialRepresentation.setType(CredentialRepresentation.PASSWORD);
+        credentialRepresentation.setValue(user.getPassword());
+        credentialRepresentation.setTemporary(false);
+        credentials.add(credentialRepresentation);
+        userRep.setCredentials(credentials);
         UserResource updateUser=users.get(userRep.getId());
         updateUser.update(userRep);
     }
 
+    /**
+     * This function initializes the keycloak server users and also initializes the repository
+     * with new users that are in the keycloak server
+     * @param userRepository
+     */
     public void initKeycloakUsers(UserRepository userRepository){
         Keycloak keycloak=getKeycloakInstance();
         RealmsResource realms=keycloak.realms();
@@ -144,20 +165,13 @@ public class UserServiceImpl implements UserService {
 
     }
 
-    public boolean userExistsInKeycloak(User user){
-        Keycloak keycloak=getKeycloakInstance();
-        RealmsResource realms=keycloak.realms();
-        List<RealmRepresentation> existingRealms=realms.findAll();
-        for (RealmRepresentation r:existingRealms) {
-            UsersResource users=keycloak.realm(r.getRealm()).users();
-            for(UserRepresentation u:users.list()){
-                if(u.getUsername().equals(user.getUserName()))
-                    return true;
-            }
-        }
-        return false;
-    }
-
+    /**
+     * This function checks if the user exists in the user repository by username and tenant
+     * @param username
+     * @param realm
+     * @param userRepository
+     * @return
+     */
     public boolean userExistsInRepository(String username,String realm,UserRepository userRepository){
         for(User user:userRepository.findAll()){
             if(user.getUserName().toLowerCase().equals(username)){
