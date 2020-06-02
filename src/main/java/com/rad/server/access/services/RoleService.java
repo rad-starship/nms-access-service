@@ -21,7 +21,7 @@ public interface RoleService
 
     void initRole(Role role);
 
-    void addRole(Role role);
+    void addRole(Role role) throws Exception;
 
     void deleteRole(Role role);
 

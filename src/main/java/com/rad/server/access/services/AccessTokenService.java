@@ -7,12 +7,12 @@ import com.rad.server.access.entities.LoginEntity;
 import com.rad.server.access.responses.HttpResponse;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.AccessToken;
-import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.ws.rs.BadRequestException;
@@ -73,8 +73,7 @@ public class AccessTokenService {
             return logoutUserSession(requestParams);
 
         } catch (Exception e) {
-            System.out.println(e.getMessage());
-            throw e;
+            return new HttpResponse(HttpStatus.BAD_REQUEST,e.getMessage()).getHttpResponse();
         }
     }
 
@@ -93,17 +92,24 @@ public class AccessTokenService {
      * @param requestParams - params of the logout request.
      * @return response from KC server.
      */
-    private ResponseEntity<Object> logoutUserSession(MultiValueMap<String, String> requestParams) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+    private ResponseEntity<?> logoutUserSession(MultiValueMap<String, String> requestParams) {
+       try {
+           HttpHeaders headers = new HttpHeaders();
+           headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(requestParams, headers);
+           HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(requestParams, headers);
 
-        String realm = getRealmFromToken();
-        String url = "http://localhost:8080/auth/realms/"+getRealmFromToken()+"/protocol/openid-connect/logout";
+           String realm = getRealmFromToken();
+           String url = "http://localhost:8080/auth/realms/" + getRealmFromToken() + "/protocol/openid-connect/logout";
 
-        return new RestTemplate().postForEntity(url, request, Object.class);
-        // got response 204, no content
+           return new RestTemplate().postForEntity(url, request, Object.class);
+           // got response 204, no content
+       }
+       catch (HttpClientErrorException e){
+           String error = e.getResponseBodyAsString().split(":\"")[2];
+           error = error.substring(0,error.indexOf("\""));
+           return new HttpResponse(e.getStatusCode(),error).getHttpResponse();
+       }
     }
 
     /**

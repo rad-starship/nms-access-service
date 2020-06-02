@@ -70,6 +70,6 @@ public class Tenant
 	@Override
 	public String toString()
 	{
-		return "User [id=" + this.id + ", name=" + this.name + "]";
+		return "Tenant [id=" + this.id + ", name=" + this.name + "]";
 	}
 }

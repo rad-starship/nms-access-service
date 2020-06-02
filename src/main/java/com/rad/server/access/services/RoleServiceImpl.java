@@ -112,17 +112,17 @@ public class RoleServiceImpl implements RoleService {
      * @param role - role to be added.
      */
     @Override
-    public void addRole(Role role) {
+    public void addRole(Role role) throws Exception {
         if(!haveInRepo(role)){
-            try {
+
                 addRoleToTenant(role,getRealmFromToken());
                 roleRepository.save(role);
-            }
-            catch (ClientErrorException e){
 
-            }
+
         }
-
+        else {
+            throw new Exception("Role is exist");
+        }
     }
 
 
@@ -259,7 +259,7 @@ public class RoleServiceImpl implements RoleService {
             }
         }
         catch (Exception e){
-            System.out.println("Roles Already Exists On Keycloak");
+
         }
     }
 

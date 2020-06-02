@@ -155,31 +155,36 @@ public class NmsAccessControllers
 
 	@DeleteMapping("/users/{id}")
 	@ResponseBody
-	public ResponseEntity<?> deleteUser(@PathVariable long id){
+	public ResponseEntity<?> deleteUser(@PathVariable long id) {
 		User user;
-		user=getUserFromRepository(id);
-		if(!isTokenUserFromSameTenant(user))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"keycloak user not authorized").getHttpResponse();
-		if(user!=null) {
-			if(roleRepository.existsById(user.getRoleID())){
-				Role userRole=roleRepository.findById(user.getRoleID()).get();
-				if(userRole.getName().equals("Admin"))
-					return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
-			}
-			for (Long tenants: user.getTenantID()) {
-				Tenant tenant=getTenantFromRepository(tenants);
-				if(tenant==null)
-					return new HttpResponse(HttpStatus.BAD_REQUEST,"tenant is null").getHttpResponse();
-				userService.deleteKeycloakUser(user.getUserName(),tenant.getName());
-			}
+		user = getUserFromRepository(id);
+		try {
+			if (!isTokenUserFromSameTenant(user))
+				return new HttpResponse(HttpStatus.BAD_REQUEST, "keycloak user not authorized").getHttpResponse();
+			if (user != null) {
+				if (roleRepository.existsById(user.getRoleID())) {
+					Role userRole = roleRepository.findById(user.getRoleID()).get();
+					if (userRole.getName().equals("Admin"))
+						return new HttpResponse(HttpStatus.BAD_REQUEST, "cannot delete Admin").getHttpResponse();
+				}
+				for (Long tenants : user.getTenantID()) {
+					Tenant tenant = getTenantFromRepository(tenants);
+					if (tenant == null)
+						return new HttpResponse(HttpStatus.BAD_REQUEST, "tenant is null").getHttpResponse();
+					userService.deleteKeycloakUser(user.getUserName(), tenant.getName());
+				}
 				System.out.println("User deleted successfully.");
-				ResponseEntity<User> result = new ResponseEntity<>(user,HttpStatus.ACCEPTED);
+				ResponseEntity<User> result = new ResponseEntity<>(user, HttpStatus.ACCEPTED);
 				return new HttpResponse(result).getHttpResponse();
+			} else
+				System.out.println("The user doesnt exist.");
+			return new HttpResponse(HttpStatus.NO_CONTENT, "user Doesnt Exist").getHttpResponse();
 		}
-		else
-			System.out.println("The user doesnt exist.");
-			return new HttpResponse(HttpStatus.NO_CONTENT,"user Doesnt Exist").getHttpResponse();
+		catch (NotFoundException e){
+			return new HttpResponse(HttpStatus.ACCEPTED.NO_CONTENT,"user Doesnt Exist").getHttpResponse();
+		}
 	}
+
 
 
 	/**
@@ -224,12 +229,17 @@ public class NmsAccessControllers
 	 */
 	@PostMapping("/roles")
 	@ResponseBody
-	public Role addRole(@RequestBody Role role)
+	public Object addRole(@RequestBody Role role)
 	{
-		System.out.println("addRole: " + role);
-		//roleRepository.save(role);
-		roleService.addRole(role);
-		return role;
+	    try {
+            System.out.println("addRole: " + role);
+            //roleRepository.save(role);
+            roleService.addRole(role);
+            return role;
+        }
+	    catch (Exception e){
+	        return  new HttpResponse(HttpStatus.CONFLICT,"Cannot add role").getHttpResponse();
+        }
 	}
 
 	/**
@@ -266,10 +276,12 @@ public class NmsAccessControllers
 			return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
 		}
 			roleService.deleteRole(new Role(roleName));
-			return new ResponseEntity<String>("Success",HttpStatus.ACCEPTED);
+			Map<String,String> result= new HashMap<>();
+			result.put("Result","Success");
+			return new ResponseEntity<>(result,HttpStatus.ACCEPTED);
 	}
 	catch(NotFoundException e){
-		return new  ResponseEntity<String>("Not found",HttpStatus.NO_CONTENT);
+		return new  ResponseEntity<>("Not found",HttpStatus.NO_CONTENT);
 	}
 
 
@@ -290,7 +302,9 @@ public class NmsAccessControllers
 					return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
 			}
 			roleService.deleteRole(roleId);
-			ResponseEntity<Long> result = new ResponseEntity<>(roleId,HttpStatus.ACCEPTED);
+			Map<String,Long> values = new HashMap<>();
+			values.put("RoleId",roleId);
+			ResponseEntity<Object> result = new ResponseEntity<>(values,HttpStatus.ACCEPTED);
 			return new HttpResponse(result).getHttpResponse();
 		}
 		catch(NotFoundException e){
