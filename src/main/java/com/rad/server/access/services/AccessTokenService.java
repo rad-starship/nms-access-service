@@ -4,20 +4,20 @@ package com.rad.server.access.services;
 
 import com.rad.server.access.componenets.KeycloakAdminProperties;
 import com.rad.server.access.entities.LoginEntity;
+import com.rad.server.access.responses.HttpResponse;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.NotFoundException;
 
 @Service
 public class AccessTokenService {
@@ -34,7 +34,7 @@ public class AccessTokenService {
      * @param loginEntity - an object contains all information for loin
      * @return On success returns the token, null on failure.
      */
-    public AccessTokenResponse getAccessToken(LoginEntity loginEntity){
+    public Object getAccessToken(LoginEntity loginEntity){
         try{
         Keycloak keycloak  = Keycloak.getInstance(
                 prop.getServerUrl(),
@@ -48,6 +48,13 @@ public class AccessTokenService {
         catch (BadRequestException e){
             System.out.println(e.getResponse());
         }
+        catch (NotAuthorizedException e){
+            return new HttpResponse(HttpStatus.UNAUTHORIZED,"Unauthorized").getHttpResponse();
+        }
+        catch(NotFoundException e){
+            return new HttpResponse(HttpStatus.NOT_FOUND,"Not found realm").getHttpResponse();
+        }
+
         return null;
     }
 
