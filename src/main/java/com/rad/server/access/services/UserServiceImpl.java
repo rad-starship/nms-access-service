@@ -11,16 +11,14 @@ import org.apache.commons.codec.binary.Base64;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.AccessToken;
-import org.keycloak.representations.idm.CredentialRepresentation;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.idm.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.management.InstanceAlreadyExistsException;
 import javax.websocket.OnClose;
 import javax.ws.rs.core.Response;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -77,7 +75,7 @@ public class UserServiceImpl implements UserService {
      * @param role
      */
     @Override
-    public void addKeycloakUser(User user,ArrayList<String> tenants,String role) {
+    public int addKeycloakUser(User user,ArrayList<String> tenants,String role) {
         Keycloak keycloak = getKeycloakInstance();
 
         for (String tenant:tenants) {
@@ -100,6 +98,8 @@ public class UserServiceImpl implements UserService {
             RealmResource realmResource = keycloak.realm(tenant);
             UsersResource usersResource = realmResource.users();
             Response response=usersResource.create(userRep);
+            if(response.getStatus()==409||response.getStatus()==400)
+                return response.getStatus();
             if(response.getStatus()!=400) {
                 UserRepresentation addUserRole = usersResource.search(user.getUserName()).get(0);
                 UserResource updateUser = usersResource.get(addUserRole.getId());
@@ -114,6 +114,7 @@ public class UserServiceImpl implements UserService {
             }
             System.out.printf("Repsonse: %s %s%n", response.getStatus(), response.getStatusInfo());
         }
+        return 0;
     }
 
     /**
@@ -121,23 +122,30 @@ public class UserServiceImpl implements UserService {
      * @param user
      * @param userName
      */
-    public void updateKeycloakUser(User user ,String userName){
-        Keycloak keycloak=getKeycloakInstance();
-        List<CredentialRepresentation> credentials=new ArrayList<>();
-        RealmResource realmResource = keycloak.realm("Admin");
-        UsersResource users =  realmResource.users();
-        UserRepresentation userRep=users.search(userName).get(0);
-        userRep.setEmail(user.getEmail());
-        userRep.setFirstName(user.getFirstName());
-        userRep.setLastName(user.getLastName());
-        CredentialRepresentation credentialRepresentation=new CredentialRepresentation();
-        credentialRepresentation.setType(CredentialRepresentation.PASSWORD);
-        credentialRepresentation.setValue(user.getPassword());
-        credentialRepresentation.setTemporary(false);
-        credentials.add(credentialRepresentation);
-        userRep.setCredentials(credentials);
-        UserResource updateUser=users.get(userRep.getId());
-        updateUser.update(userRep);
+    public boolean updateKeycloakUser(User user ,String userName,String password,String realm) {
+        try {
+            Keycloak keycloak = getKeycloakInstance();
+            List<CredentialRepresentation> credentials = new ArrayList<>();
+            RealmResource realmResource = keycloak.realm(realm);
+            UsersResource users = realmResource.users();
+            UserRepresentation userRep = users.search(userName).get(0);
+            CredentialRepresentation credentialRepresentation = new CredentialRepresentation();
+            credentialRepresentation.setType(CredentialRepresentation.PASSWORD);
+            credentialRepresentation.setValue(password);
+            credentialRepresentation.setTemporary(false);
+            credentials.add(credentialRepresentation);
+            UserResource updateUser = users.get(userRep.getId());
+            updateUser.resetPassword(credentialRepresentation);
+            userRep.setEmail(user.getEmail());
+            userRep.setFirstName(user.getFirstName());
+            userRep.setLastName(user.getLastName());
+            updateUser.update(userRep);
+            return true;
+        }
+        catch (Exception e){
+            return false;
+        }
+
     }
 
     /**

@@ -10,6 +10,7 @@ import java.util.stream.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rad.server.access.adapters.MultitenantConfiguration;
 import com.rad.server.access.entities.settings.*;
+import com.rad.server.access.services.SettingsService;
 import com.rad.server.access.services.TenantService;
 
 import com.rad.server.access.services.RoleService;
@@ -40,6 +41,11 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 {
     @Autowired
     private ApplicationContext applicationContext;
+
+    @Autowired
+	private SettingsService settingsService;
+
+    private Settings initSettings;
 	
 	public static void main(String[] args)
 	{
@@ -74,7 +80,8 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 			otpPolicy otpPolicy=new otpPolicy(false,"Time Based",8,30);
 			SocialLogin socialLogin=new SocialLogin("None");
 			Authentication authentication=new Authentication(token,passwordPolicy,otpPolicy,socialLogin);
-			return  new Settings(authentication,autorization);
+			initSettings=new Settings(authentication,autorization);
+			return initSettings;
 	}
 
 	/**
@@ -157,30 +164,35 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 					realms.add("America");
 					user = new User(name, name, name.toLowerCase() + "@domain.com", name, "u12", 17, tenants);
 					userService.addKeycloakUser(user,realms,"User");
+					user.encodePassword(user.getPassword());
 				}
 				else if(name.equals("europeUser")) {
 					tenants.add(3L);
 					realms.add("Europe");
 					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"u12", 17, tenants);
 					userService.addKeycloakUser(user,realms,"User");
+					user.encodePassword(user.getPassword());
 				}
 				else if(name.equals("asiaUser")) {
 					tenants.add(4L);
 					realms.add("Asia");
 					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"u12", 17, tenants);
 					userService.addKeycloakUser(user,realms,"User");
+					user.encodePassword(user.getPassword());
 				}
 				else if(name.equals("africaUser")){
 					tenants.add(5L);
 					realms.add("Africa");
 					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"u12", 17, tenants);
 					userService.addKeycloakUser(user,realms,"User");
+					user.encodePassword(user.getPassword());
 				}
 				else if(name.equals("all")){
 					tenants.add(6L);
 					realms.add("All");
 					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"u12", 17, tenants);
 					userService.addKeycloakUser(user,realms,"User");
+					user.encodePassword(user.getPassword());
 				}
 				else if(name.equals("euroAsiaUser")){
 					tenants.add(3L);
@@ -189,6 +201,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 					realms.add("Asia");
 					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"u12", 17, tenants);
 					userService.addKeycloakUser(user,realms,"User");
+					user.encodePassword(user.getPassword());
 				}
 				else{
 					tenants.add(2L);
@@ -197,6 +210,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 					realms.add("Africa");
 					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"u12", 17, tenants);
 					userService.addKeycloakUser(user,realms,"User");
+					user.encodePassword(user.getPassword());
 				}
 				userRepository.save(user);
 
@@ -215,8 +229,9 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 				tenants.add(1L);
 				realms.add("Admin");
 				User user = new User(name,name,name.toLowerCase() + "@domain.com","admin","admin",15,tenants);
-				userRepository.save(user);
 				userService.addKeycloakUser(user,realms,"Admin");
+				user.encodePassword(user.getPassword());
+				userRepository.save(user);
 			});
 			userRepository.findAll().forEach(System.out::println);
 		};
@@ -235,27 +250,30 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 					realms.add("America");
 					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"a12", 16, tenants);
 					userService.addKeycloakUser(user,realms,"Region-Admin");
+					user.encodePassword(user.getPassword());
 				}
 				else if(name.contains("europe")) {
 					tenants.add(3L);
 					realms.add("Europe");
 					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"a12", 16, tenants);
 					userService.addKeycloakUser(user,realms,"Region-Admin");
+					user.encodePassword(user.getPassword());
 				}
 				else if(name.contains("asia")) {
 					tenants.add(4L);
 					realms.add("Asia");
 					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"a12", 16, tenants);
 					userService.addKeycloakUser(user,realms,"Region-Admin");
+					user.encodePassword(user.getPassword());
 				}
 				else {
 					tenants.add(5L);
 					realms.add("Africa");
 					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"a12", 16, tenants);
 					userService.addKeycloakUser(user,realms,"Region-Admin");
+					user.encodePassword(user.getPassword());
 				}
 				userRepository.save(user);
-
 			});
 			userRepository.findAll().forEach(System.out::println);
 			Thread initThread=new Thread(){
@@ -264,6 +282,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 				}
 			};
 			initThread.start();
+			settingsService.applySettings(initSettings);
 		};
 	}
 

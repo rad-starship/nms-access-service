@@ -26,4 +26,6 @@ public interface TenantService
 
     boolean tenantExists(Tenant tenant);
     void initKeycloakTenants(TenantRepository repository);
+
+    public void addIdentityProvider(String providerID,String secret,String clientID,String realm);
 }

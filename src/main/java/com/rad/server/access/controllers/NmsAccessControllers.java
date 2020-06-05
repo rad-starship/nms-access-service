@@ -16,8 +16,10 @@ import com.rad.server.access.entities.*;
 import com.rad.server.access.repositories.*;
 import org.apache.commons.codec.binary.Base64;
 
+import javax.management.BadAttributeValueExpException;
 import javax.management.InstanceAlreadyExistsException;
 import javax.validation.Valid;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 
 /**
@@ -123,8 +125,13 @@ public class NmsAccessControllers
 							}
 						}
 					}
+					int response=userService.addKeycloakUser(user,realms,role.getName());
+					if(response==409)
+						throw new Exception();
+					if(response==400)
+						throw new BadRequestException();
+					user.encodePassword(user.getPassword());
 					userRepository.save(user);
-					userService.addKeycloakUser(user,realms,role.getName());
 					return user;
 				}
 				else throw new NotFoundException();
@@ -145,6 +152,16 @@ public class NmsAccessControllers
 			response.put("Data","keycloak user not authorized");
 			return  response;
 		}
+		catch (BadRequestException e){
+			HashMap<String,String> response= new HashMap<>();
+			response.put("Data","Password doesnt meet the requirements");
+			return  response;
+		}
+		catch (Exception e){
+			HashMap<String,String> response= new HashMap<>();
+			response.put("Data","Email already exists in the system.");
+			return  response;
+		}
 	}
 
 	/**
@@ -157,32 +174,29 @@ public class NmsAccessControllers
 	@ResponseBody
 	public ResponseEntity<?> deleteUser(@PathVariable long id) {
 		User user;
-		user = getUserFromRepository(id);
-		try {
-			if (!isTokenUserFromSameTenant(user))
-				return new HttpResponse(HttpStatus.BAD_REQUEST, "keycloak user not authorized").getHttpResponse();
-			if (user != null) {
-				if (roleRepository.existsById(user.getRoleID())) {
-					Role userRole = roleRepository.findById(user.getRoleID()).get();
-					if (userRole.getName().equals("Admin"))
-						return new HttpResponse(HttpStatus.BAD_REQUEST, "cannot delete Admin").getHttpResponse();
-				}
-				for (Long tenants : user.getTenantID()) {
-					Tenant tenant = getTenantFromRepository(tenants);
-					if (tenant == null)
-						return new HttpResponse(HttpStatus.BAD_REQUEST, "tenant is null").getHttpResponse();
-					userService.deleteKeycloakUser(user.getUserName(), tenant.getName());
-				}
+		user=getUserFromRepository(id);
+		if(user==null){
+			System.out.println("The user doesnt exist.");
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"user Doesnt Exist").getHttpResponse();
+		}
+		if(!isTokenUserFromSameTenant(user))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"keycloak user not authorized").getHttpResponse();
+			if(roleRepository.existsById(user.getRoleID())){
+				Role userRole=roleRepository.findById(user.getRoleID()).get();
+				if(userRole.getName().equals("Admin"))
+					return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
+			}
+			for (Long tenants: user.getTenantID()) {
+				Tenant tenant=getTenantFromRepository(tenants);
+				if(tenant==null)
+					return new HttpResponse(HttpStatus.BAD_REQUEST,"tenant is null").getHttpResponse();
+				userService.deleteKeycloakUser(user.getUserName(),tenant.getName());
+			}
+				userRepository.delete(user);
 				System.out.println("User deleted successfully.");
 				ResponseEntity<User> result = new ResponseEntity<>(user, HttpStatus.ACCEPTED);
 				return new HttpResponse(result).getHttpResponse();
-			} else
-				System.out.println("The user doesnt exist.");
-			return new HttpResponse(HttpStatus.NO_CONTENT, "user Doesnt Exist").getHttpResponse();
-		}
-		catch (NotFoundException e){
-			return new HttpResponse(HttpStatus.ACCEPTED.NO_CONTENT,"user Doesnt Exist").getHttpResponse();
-		}
+
 	}
 
 
@@ -194,18 +208,31 @@ public class NmsAccessControllers
 	 * @return
 	 */
 	@PutMapping("/users/{id}")
-	@ResponseBody
+
 	public ResponseEntity<?> updateUser(@PathVariable long id,@RequestBody User user){
 		User oldUser=getUserFromRepository(id);
 		if(!isTokenUserFromSameTenant(oldUser))
 			return new HttpResponse(HttpStatus.BAD_REQUEST,"keycloak user not authorized").getHttpResponse();
 		if(oldUser==null)
 			return new HttpResponse(HttpStatus.BAD_REQUEST,"User doesnt exists").getHttpResponse();
-		User newUser=new User(user);
-		newUser.setId(id);
-		newUser.setUserName(oldUser.getUserName());
-		userService.updateKeycloakUser(user,oldUser.getUserName());
-		userRepository.save(newUser);
+		ArrayList<String> realms=new ArrayList<>();
+		for (Long tenant:oldUser.getTenantID()) {
+			if(tenantRepository.existsById(tenant)){
+				realms.add(tenantRepository.findById(tenant).get().getName());
+			}
+		}
+		for(String realm:realms) {
+			User newUser = new User(user);
+			newUser.setId(id);
+			newUser.setUserName(oldUser.getUserName());
+			boolean result=userService.updateKeycloakUser(user, oldUser.getUserName(),user.getPassword(),realm);
+			if(!result)
+				return new HttpResponse(HttpStatus.BAD_REQUEST,"Password doesnt meet the requirements").getHttpResponse();
+			newUser.encodePassword(user.getPassword());
+			newUser.setRoleID(oldUser.getRoleID());
+			newUser.setTenantsID(oldUser.getTenantID());
+			userRepository.save(newUser);
+		}
 		ResponseEntity<User> result = new ResponseEntity<>(user,HttpStatus.ACCEPTED);
 		return new HttpResponse(result).getHttpResponse();
 	}
@@ -479,7 +506,7 @@ public class NmsAccessControllers
 
 	private User getUserFromToken(String username){
 		for (User user: userRepository.findAll()) {
-			if(user.getUserName().equals(username))
+			if(user.getUserName().toLowerCase().equals(username.toLowerCase()))
 				return user;
 		}
 		return null;

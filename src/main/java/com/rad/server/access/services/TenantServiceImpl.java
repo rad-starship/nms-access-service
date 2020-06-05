@@ -58,24 +58,32 @@ public class TenantServiceImpl implements TenantService {
     @Override
     public void addKeycloakTenant(Tenant tenant) {
         Keycloak keycloak=getKeycloakInstance();
-        PasswordPolicy passwordPolicy=settings.getAuthentication().getPasswordPolicy();
         Token token=settings.getAuthentication().getToken();
         otpPolicy otpPolicy=settings.getAuthentication().getOtpPolicy();
-        String password="length("+passwordPolicy.getMinimumLength()+") and forceExpiredPasswordChange("+passwordPolicy.getExpirePassword()+") and digits("+passwordPolicy.getDigits()+") and passwordHistory("+passwordPolicy.getNotRecentlyUsed()+")";
-        if(passwordPolicy.isNotUsername())
-            password+=" and notUsername(undefined)";
         RealmRepresentation realm=new RealmRepresentation();
         realm.setRealm(tenant.getName());
         realm.setEnabled(true);
-        //realm.setPasswordPolicy(password);
         settingsService.applyTokenToRealm(token, realm);
-        realm.setOtpPolicyDigits(otpPolicy.getNumberOfDigits());
-        realm.setOtpPolicyLookAheadWindow(otpPolicy.getOptTokenPeriod());
-        //realm.setOtpPolicyType(otpPolicy.getOptType());
         keycloak.realms().create(realm);
         addAllClients(tenant.getName());
         if(otpPolicy.isEnabled())
             setOTP(tenant.getName());
+    }
+
+    @Override
+    public void addIdentityProvider(String providerID,String secret,String clientID,String realm){
+        Keycloak keycloak=getKeycloakInstance();
+        IdentityProviderRepresentation identityProviderRepresentation=new IdentityProviderRepresentation();
+        Map<String,String> config=new HashMap<>();
+        config.put("clientSecret",secret);
+        config.put("clientId",clientID);
+        config.put("useJwkUrl","true");
+        identityProviderRepresentation.setConfig(config);
+        identityProviderRepresentation.setAlias(providerID);
+        identityProviderRepresentation.setProviderId(providerID);
+        identityProviderRepresentation.setStoreToken(true);
+        identityProviderRepresentation.setEnabled(true);
+        keycloak.realm(realm).identityProviders().create(identityProviderRepresentation);
     }
 
 
@@ -192,8 +200,10 @@ public class TenantServiceImpl implements TenantService {
     public void initKeycloakTenants(TenantRepository repository){
         Keycloak keycloak=getKeycloakInstance();
         for (Tenant t:repository.findAll()) {
-            if(!tenantExists(t))
+            if(!tenantExists(t)) {
                 addKeycloakTenant(t);
+                addIdentityProvider("google","9u_zxECI9MtXP2kLFV5wWFPk","81109865632-shsg5672op595bmujcuabia21bjenpri.apps.googleusercontent.com",t.getName());
+            }
         }
         for(RealmRepresentation r:keycloak.realms().findAll()){
             if(r.getRealm().equals("master"))

@@ -8,6 +8,7 @@ import com.rad.server.access.entities.User;
 import com.rad.server.access.repositories.UserRepository;
 import org.springframework.stereotype.*;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,11 +19,11 @@ import java.util.List;
 @Service
 public interface UserService
 {
-    void addKeycloakUser(User user, ArrayList<String> tenant, String role);
+    int addKeycloakUser(User user, ArrayList<String> tenant, String role);
 
     void deleteKeycloakUser(String username,String tenant);
 
-    void updateKeycloakUser(User user,String userName);
+    boolean updateKeycloakUser(User user,String userName,String password,String realm);
 
     void initKeycloakUsers(UserRepository userRepository);
 }

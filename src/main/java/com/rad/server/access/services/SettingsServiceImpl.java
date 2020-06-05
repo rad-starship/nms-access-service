@@ -143,7 +143,8 @@ public class SettingsServiceImpl implements SettingsService {
             RealmRepresentation realmRepresentation =keycloak.realm(tenant.getName()).toRepresentation();
             realmRepresentation.setOtpPolicyDigits(otpPolicy.getNumberOfDigits());
             realmRepresentation.setOtpPolicyLookAheadWindow(otpPolicy.getOptTokenPeriod());
-            realmRepresentation.setOtpPolicyType(otpPolicy.getOptType());
+            if(otpPolicy.getOptType().equals("Time Based"))
+            realmRepresentation.setOtpPolicyType("totp");
             keycloak.realm(tenant.getName()).update(realmRepresentation);
         }
     }

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.hibernate.annotations.Fetch;
 import org.springframework.data.repository.cdi.Eager;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import javax.jws.Oneway;
 import javax.persistence.*;
@@ -69,14 +71,6 @@ public class User
 		this.roleID=roleID;
 		this.password=password;
 		tenantsID=tenants;
-	}
-
-	public User(String firstName,String lastName, String email,String userName)
-	{
-		this.firstName = firstName;
-		this.lastName=lastName;
-		this.email = email;
-		this.userName=userName;
 	}
 
 	public User(User user){
@@ -145,8 +139,15 @@ public class User
 		return password;
 	}
 
-	public void setPassword(String password) {
-		this.password = password;
+	public void setPassword(String password)
+	{
+		this.password=password;
+	}
+
+	public void encodePassword(String password)
+	{
+		PasswordEncoder encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
+		this.password=encoder.encode(password);
 	}
 
 	@Override
