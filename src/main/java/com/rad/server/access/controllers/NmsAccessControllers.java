@@ -55,12 +55,17 @@ public class NmsAccessControllers
 	@Autowired
 	private AccessToken token;
 
+	@Autowired
+	private HashSet<String> tokenBlackList;
+
 
 
 	@GetMapping("/users")
 	@ResponseBody
-	public List<User> getUsers(@RequestHeader HttpHeaders headers)
+	public Object getUsers(@RequestHeader HttpHeaders headers)
 	{
+		if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 		List<User> users =(List<User>) userRepository.findAll();
 		System.out.println("getUsers: " + users);
 		return users;
@@ -76,8 +81,10 @@ public class NmsAccessControllers
 
 	@GetMapping("/users/getTokenTenants/{username}")
 	@ResponseBody
-	public List<String> getUserToken(@RequestHeader HttpHeaders headers,@PathVariable String username)
+	public Object getUserToken(@RequestHeader HttpHeaders headers,@PathVariable String username)
 	{
+		if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 		User tokenUser=getUserFromToken(username);
 		ArrayList<String> tenants=new ArrayList<>();
 		for(long id:tokenUser.getTenantID()){
@@ -96,9 +103,11 @@ public class NmsAccessControllers
 	 */
 	@PostMapping("/users")
 	@ResponseBody
-	public Object addUser(@RequestBody User user)
+	public Object addUser(@RequestBody User user,@RequestHeader HttpHeaders headers)
 	{
 		try {
+			if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+				return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 			if(!isTokenUserFromSameTenant(user)){
 				throw new Error();
 			}
@@ -162,7 +171,9 @@ public class NmsAccessControllers
 
 	@DeleteMapping("/users/{id}")
 	@ResponseBody
-	public ResponseEntity<?> deleteUser(@PathVariable long id) {
+	public ResponseEntity<?> deleteUser(@PathVariable long id,@RequestHeader HttpHeaders headers) {
+		if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 		User user;
 		user=getUserFromRepository(id);
 		if(user==null){
@@ -199,7 +210,9 @@ public class NmsAccessControllers
 	 */
 	@PutMapping("/users/{id}")
 
-	public ResponseEntity<?> updateUser(@PathVariable long id,@RequestBody User user){
+	public ResponseEntity<?> updateUser(@PathVariable long id,@RequestBody User user,@RequestHeader HttpHeaders headers){
+		if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 		User oldUser=getUserFromRepository(id);
 		if(!isTokenUserFromSameTenant(oldUser))
 			return new HttpResponse(HttpStatus.BAD_REQUEST,"keycloak user not authorized").getHttpResponse();
@@ -229,8 +242,10 @@ public class NmsAccessControllers
 	
 	@GetMapping("/roles")
 	@ResponseBody
-	public List<Role> getRoles()
+	public Object getRoles(@RequestHeader HttpHeaders headers)
 	{
+		if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 		//List<Role> roles = (List<Role>) roleRepository.findAll();
 		List<Role> roles = roleService.getRoles();
 		System.out.println("getRoles: " + roles);
@@ -246,9 +261,11 @@ public class NmsAccessControllers
 	 */
 	@PostMapping("/roles")
 	@ResponseBody
-	public Object addRole(@RequestBody Role role)
+	public Object addRole(@RequestBody Role role,@RequestHeader HttpHeaders headers)
 	{
 	    try {
+			if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+				return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
             System.out.println("addRole: " + role);
             //roleRepository.save(role);
             roleService.addRole(role);
@@ -267,9 +284,11 @@ public class NmsAccessControllers
 	 */
 	@PutMapping("/roles/{id}")
 	@ResponseBody
-	public Role updateRole(@PathVariable(value = "id") Long roleId,
-												   @Valid @RequestBody Role roleDetails) {
+	public Object updateRole(@PathVariable(value = "id") Long roleId,
+												   @Valid @RequestBody Role roleDetails,@RequestHeader HttpHeaders headers) {
 		try {
+			if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+				return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 			return roleService.updateRole(roleId, roleDetails);
 		}
 			catch(Exception e){
@@ -285,10 +304,12 @@ public class NmsAccessControllers
 	 */
 	@DeleteMapping("/roles/{name}")
 	@ResponseBody
-	public ResponseEntity<?> deleteRole(@PathVariable(value = "name") String roleName){
+	public ResponseEntity<?> deleteRole(@PathVariable(value = "name") String roleName,@RequestHeader HttpHeaders headers){
 
 	System.out.println("DeleteRole: " + roleName);
 	try {
+		if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 		if(roleName.equals("Admin")){
 			return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
 		}
@@ -311,9 +332,11 @@ public class NmsAccessControllers
 	 */
 	@DeleteMapping("/rolesid/{id}")
 	@ResponseBody
-	public ResponseEntity<?> deleteRole(@PathVariable(value = "id") long roleId){
+	public ResponseEntity<?> deleteRole(@PathVariable(value = "id") long roleId,@RequestHeader HttpHeaders headers){
 		System.out.println("DeleteRole: " + roleId);
 		try {
+			if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+				return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 			if(roleRepository.existsById(roleId)){
 				if(roleRepository.findById(roleId).get().getName().equals("Admin"))
 					return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
@@ -335,7 +358,9 @@ public class NmsAccessControllers
 
 	@GetMapping("/permissions")
 	@ResponseBody
-	public List<Map<String,String>> getPermissions(){
+	public Object getPermissions(@RequestHeader HttpHeaders headers){
+		if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 		List<Map<String,String>> permissions = roleService.getPermissions();
 		return permissions;
 	}
@@ -343,8 +368,10 @@ public class NmsAccessControllers
 
 	@GetMapping("/tenants")
 	@ResponseBody
-	public List<Tenant> getTenants()
+	public Object getTenants(@RequestHeader HttpHeaders headers)
 	{
+		if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 		List<Tenant> tenants = (List<Tenant>) tenantRepository.findAll();
 		System.out.println("getTenants: " + tenants);
 		return tenants;
@@ -358,10 +385,11 @@ public class NmsAccessControllers
 	 */
 	@PostMapping("/tenants")
 	@ResponseBody
-	public Object addTenant(@RequestBody Tenant tenant)
+	public Object addTenant(@RequestBody Tenant tenant,@RequestHeader HttpHeaders headers)
 	{
 		try {
-
+			if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+				return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 			System.out.println("addTenant: " + tenant);
 			tenantRepository.save(tenant);
 			tenantService.addKeycloakTenant(tenant);
@@ -380,7 +408,9 @@ public class NmsAccessControllers
 	 */
 	@DeleteMapping("/tenants/{id}")
 	@ResponseBody
-	public Object deleteTenant(@PathVariable long id){
+	public Object deleteTenant(@PathVariable long id,@RequestHeader HttpHeaders headers){
+		if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 		Tenant tenant;
 		tenant=getTenantFromRepository(id);
 		boolean admin=false;
@@ -409,7 +439,9 @@ public class NmsAccessControllers
 	 */
 	@PutMapping("/tenants/{id}")
 	@ResponseBody
-	public Object updateTenant(@PathVariable long id,@RequestBody Tenant tenant){
+	public Object updateTenant(@PathVariable long id,@RequestBody Tenant tenant,@RequestHeader HttpHeaders headers){
+		if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 		Tenant oldTenant=getTenantFromRepository(id);
 		if(oldTenant==null) {
 			return new HttpResponse(HttpStatus.BAD_REQUEST,"The tenant does not exist").getHttpResponse();
@@ -423,7 +455,9 @@ public class NmsAccessControllers
 
 	@PostMapping("/settings")
     @ResponseBody
-    public Object postSettings(@RequestBody Object settings){
+    public Object postSettings(@RequestBody Object settings,@RequestHeader HttpHeaders headers){
+		if(tokenBlackList.contains(headers.get("Authorization").get(0)))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
         System.out.println(settings);
 
 		Settings settings1 = settingsService.parseSettings(settings);
@@ -443,6 +477,7 @@ public class NmsAccessControllers
 	@PostMapping("/logout")
 	@ResponseBody
 	public Object logout(@RequestBody String refreshToken,@RequestHeader HttpHeaders headers){
+		tokenBlackList.add(headers.get("Authorization").get(0));
 		return accessTokenService.logout(refreshToken);
 	}
 

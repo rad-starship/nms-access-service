@@ -73,6 +73,11 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	}
 
 	@Bean
+	HashSet<String> tokenBlackListInit(){
+		return new HashSet<>();
+	}
+
+	@Bean
 	Settings settingsInit(){
 			Autorization autorization=new Autorization();
 			Token token=new Token(30,600,1500,20);
