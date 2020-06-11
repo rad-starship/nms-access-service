@@ -138,29 +138,19 @@ public class NmsAccessControllers
 
 		}
 		catch (NotFoundException e){
-			HashMap<String,String> response= new HashMap<>();
-			response.put("Data","Tenant ID or Role ID Does not exists");
-			return  response;
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Tenant ID or Role ID Does not exists").getHttpResponse();
 		}
 		catch (InstanceAlreadyExistsException e){
-			HashMap<String,String> response= new HashMap<>();
-			response.put("Data","Username already exists");
-			return  response;
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Username already exists").getHttpResponse();
 		}
 		catch (java.lang.Error e){
-			HashMap<String,String> response= new HashMap<>();
-			response.put("Data","keycloak user not authorized");
-			return  response;
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"keycloak user not authorized").getHttpResponse();
 		}
 		catch (BadRequestException e){
-			HashMap<String,String> response= new HashMap<>();
-			response.put("Data","Password doesnt meet the requirements");
-			return  response;
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Password doesnt meet the requirements").getHttpResponse();
 		}
 		catch (Exception e){
-			HashMap<String,String> response= new HashMap<>();
-			response.put("Data","Email already exists in the system.");
-			return  response;
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Email already exists in the system").getHttpResponse();
 		}
 	}
 
@@ -378,9 +368,7 @@ public class NmsAccessControllers
 			return tenant;
 		}
 		catch (Exception e){
-			HashMap<String,String> response= new HashMap<>();
-			response.put("Data","Tenant already exists");
-			return  response;
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Tenant already exists").getHttpResponse();
 		}
 	}
 
@@ -424,9 +412,7 @@ public class NmsAccessControllers
 	public Object updateTenant(@PathVariable long id,@RequestBody Tenant tenant){
 		Tenant oldTenant=getTenantFromRepository(id);
 		if(oldTenant==null) {
-			HashMap<String,String> response=new HashMap<>();
-			response.put("Data","The tenant does not exist");
-			return response;
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"The tenant does not exist").getHttpResponse();
 		}
 		Tenant newTenant=new Tenant(tenant.getName(),tenant.getContinents());
 		newTenant.setId(id);
