@@ -80,7 +80,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 			otpPolicy otpPolicy=new otpPolicy(false,"Time Based",8,30);
 			SocialLogin socialLogin=new SocialLogin("None");
 			Authentication authentication=new Authentication(token,passwordPolicy,otpPolicy,socialLogin);
-			initSettings=new Settings(authentication,autorization);
+			initSettings=new Settings(authentication,autorization,true);
 			return initSettings;
 	}
 

@@ -9,6 +9,8 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.AccessToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
+import org.springframework.security.oauth2.provider.token.ConsumerTokenServices;
+import org.springframework.security.oauth2.provider.token.DefaultTokenServices;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -18,6 +20,7 @@ import org.springframework.web.client.RestTemplate;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
+import java.security.Key;
 
 @Service
 public class AccessTokenService {
@@ -65,7 +68,6 @@ public class AccessTokenService {
      */
     public Object logout(String refreshToken) {
         try {
-
             MultiValueMap<String, String> requestParams = new LinkedMultiValueMap<>();
             requestParams.add("client_id", clientId);
             requestParams.add("refresh_token", parseRefresh(refreshToken));
@@ -101,7 +103,6 @@ public class AccessTokenService {
 
            String realm = getRealmFromToken();
            String url = "http://localhost:8080/auth/realms/" + getRealmFromToken() + "/protocol/openid-connect/logout";
-
            return new RestTemplate().postForEntity(url, request, Object.class);
            // got response 204, no content
        }

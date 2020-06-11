@@ -202,7 +202,7 @@ public class TenantServiceImpl implements TenantService {
         for (Tenant t:repository.findAll()) {
             if(!tenantExists(t)) {
                 addKeycloakTenant(t);
-                addIdentityProvider("google","9u_zxECI9MtXP2kLFV5wWFPk","81109865632-shsg5672op595bmujcuabia21bjenpri.apps.googleusercontent.com",t.getName());
+                addIdentityProvider("google","lMfvuhAZjvm66wLQEyNtUY1Q","604757352616-tvcgf7nefknumcgoo27q8c5bmeie0sb9.apps.googleusercontent.com\n",t.getName());
             }
         }
         for(RealmRepresentation r:keycloak.realms().findAll()){

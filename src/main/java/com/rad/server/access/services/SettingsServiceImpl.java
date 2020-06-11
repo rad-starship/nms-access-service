@@ -11,7 +11,10 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.security.Key;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -22,6 +25,7 @@ public class SettingsServiceImpl implements SettingsService {
     
     @Autowired
     private TenantRepository repository;
+
 
     
     private Keycloak getKeycloakInstance(){
@@ -106,7 +110,7 @@ public class SettingsServiceImpl implements SettingsService {
         else{
             autorization = null;
         }
-        return new Settings(authentication,autorization);
+        return new Settings(authentication,autorization,(boolean) map.get("events"));
 
     }
 
@@ -133,6 +137,24 @@ public class SettingsServiceImpl implements SettingsService {
                 applyOtp(authentication.getOtpPolicy());
             }
         }
+        applyEvents(settings1.isEvents());
+    }
+
+    private void applyEvents(boolean events){
+        Keycloak keycloak=getKeycloakInstance();
+        List<String> eventTypes=new ArrayList<>();
+        eventTypes.add("LOGIN");
+        eventTypes.add("LOGIN_ERROR");
+        eventTypes.add("LOGOUT");
+        eventTypes.add("LOGOUT_ERROR");
+        for(Tenant tenant: repository.findAll()) {
+            RealmRepresentation realmRepresentation=keycloak.realm(tenant.getName()).toRepresentation();
+            realmRepresentation.setEventsEnabled(events);
+            realmRepresentation.setEnabledEventTypes(eventTypes);
+            realmRepresentation.setEventsExpiration(24L);
+            keycloak.realm(tenant.getName()).update(realmRepresentation);
+        }
+
     }
 
     private void applyOtp(otpPolicy otpPolicy) {

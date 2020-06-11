@@ -76,12 +76,12 @@ public class NmsAccessControllers
 
 	@GetMapping("/users/getTokenTenants/{username}")
 	@ResponseBody
-	public ArrayList<String> getUserToken(@RequestHeader HttpHeaders headers,@PathVariable String username)
+	public List<String> getUserToken(@RequestHeader HttpHeaders headers,@PathVariable String username)
 	{
 		User tokenUser=getUserFromToken(username);
 		ArrayList<String> tenants=new ArrayList<>();
 		for(long id:tokenUser.getTenantID()){
-			for(String continent:tenantRepository.findById(id).get().getContinents()){
+			for(String continent:getTenantFromRepository(id).getContinents()){
 				if(!tenants.contains(continent))
 					tenants.add(continent);
 			}
@@ -456,7 +456,7 @@ public class NmsAccessControllers
 
 	@PostMapping("/logout")
 	@ResponseBody
-	public Object logout(@RequestBody String refreshToken){
+	public Object logout(@RequestBody String refreshToken,@RequestHeader HttpHeaders headers){
 		return accessTokenService.logout(refreshToken);
 	}
 
