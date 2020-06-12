@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
+import org.springframework.boot.autoconfigure.elasticsearch.rest.RestClientAutoConfiguration;
 import org.springframework.boot.context.event.*;
 import org.springframework.context.*;
 import org.springframework.context.annotation.*;
@@ -41,7 +42,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = RestClientAutoConfiguration.class)
 @ImportAutoConfiguration(MultitenantConfiguration.class)
 public class NmsAccessApplication implements ApplicationListener<ApplicationReadyEvent>
 {
