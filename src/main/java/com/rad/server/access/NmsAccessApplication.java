@@ -18,17 +18,23 @@ import com.rad.server.access.services.UserService;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
+import org.keycloak.events.Event;
 import org.keycloak.representations.AccessToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
 import org.springframework.boot.context.event.*;
 import org.springframework.context.*;
 import org.springframework.context.annotation.*;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.env.*;
 import com.rad.server.access.entities.*;
 import com.rad.server.access.entities.Role;
 import com.rad.server.access.repositories.*;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -39,6 +45,16 @@ import javax.servlet.http.HttpServletRequest;
 @ImportAutoConfiguration(MultitenantConfiguration.class)
 public class NmsAccessApplication implements ApplicationListener<ApplicationReadyEvent>
 {
+
+	private static final Logger LOG = LoggerFactory.getLogger("KafkaApp");
+
+	private final KafkaTemplate<String, String> kafkaTemplate;
+
+	@Autowired
+	public NmsAccessApplication(KafkaTemplate<String, String> kafkaTemplate) {
+		this.kafkaTemplate = kafkaTemplate;
+	}
+
     @Autowired
     private ApplicationContext applicationContext;
 
@@ -71,6 +87,12 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 			e.printStackTrace();
 		}
 	}
+
+	@KafkaListener(topics = "events", groupId = "rad")
+	public void listen(String message) {
+		LOG.info("Received message in rad group: {}", message);
+	}
+
 
 	@Bean
 	HashSet<String> tokenBlackListInit(){
