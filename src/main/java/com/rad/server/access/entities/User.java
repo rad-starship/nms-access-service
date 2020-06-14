@@ -1,17 +1,10 @@
 package com.rad.server.access.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.hibernate.annotations.Fetch;
-import org.springframework.data.repository.cdi.Eager;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
-import javax.jws.Oneway;
+import java.util.*;
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import org.springframework.security.crypto.factory.*;
+import org.springframework.security.crypto.password.*;
+import com.fasterxml.jackson.annotation.*;
 
 @Entity
 public class User
@@ -154,5 +147,10 @@ public class User
 	public String toString()
 	{
 		return "User [id=" + this.id + ", name=" + this.firstName+" "+this.lastName + ", email=" + this.email + "]";
+	}
+
+	public List<Long> getTenantsID()
+	{
+		return this.tenantsID;
 	}
 }
