@@ -9,6 +9,7 @@ import java.util.stream.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rad.server.access.adapters.MultitenantConfiguration;
+import com.rad.server.access.componenets.KeycloakAdminProperties;
 import com.rad.server.access.entities.settings.*;
 import com.rad.server.access.services.SettingsService;
 import com.rad.server.access.services.TenantService;
@@ -18,8 +19,12 @@ import com.rad.server.access.services.UserService;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.events.Event;
+import org.keycloak.events.EventListenerProviderFactory;
 import org.keycloak.representations.AccessToken;
+import org.keycloak.representations.idm.EventRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.*;
@@ -61,6 +66,12 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
     @Autowired
 	private SettingsService settingsService;
 
+	@Autowired
+	private KeycloakAdminProperties prop;
+
+	@Autowired
+	private TenantRepository tenantRepository;
+
     private Settings initSettings;
 	
 	public static void main(String[] args)
@@ -73,6 +84,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	{
 		try
 		{
+
 			String ip       = InetAddress.getLocalHost().getHostAddress();
 			String hostName = InetAddress.getLocalHost().getHostName();
 			int port        = applicationContext.getBean(Environment.class).getProperty("server.port", Integer.class, 8080);
@@ -81,6 +93,37 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 			System.out.println("* NMS Access Service is Ready ");
 			System.out.println("* Host=" + hostName + ", IP=" + ip + ", Port=" + port);
 			System.out.println("*****************************************************");
+
+			Timer timer = new Timer ();
+
+			TimerTask t = new TimerTask () {
+				@Override
+				public void run () {
+					Keycloak keycloak=Keycloak.getInstance(
+
+							prop.getServerUrl(),// keycloak address
+							prop.getRelm(), // ​​specify Realm master
+							prop.getUsername(), // ​​administrator account
+							prop.getPassword(), // ​​administrator password
+							prop.getCliendId());
+					for(Tenant tenant:tenantRepository.findAll()){
+						RealmResource realm=keycloak.realm(tenant.getName());
+						for(EventRepresentation event:realm.getEvents()){
+							List<String> details=new ArrayList<>();
+							details.add(event.getClientId());
+							details.add(tenant.getName());
+							details.add(event.getType());
+							details.add(event.getError());
+							details.add(event.getIpAddress());
+							details.add(event.getDetails().toString());
+							kafkaTemplate.send("events",details.toString());
+						}
+						realm.clearEvents();
+					}
+				}
+			};
+
+			timer.schedule (t, 0l, 1000*60*20);
 		}
 		catch (UnknownHostException e)
 		{

@@ -2,9 +2,11 @@ package com.rad.server.access.controllers;
 
 import java.util.*;
 
+import com.rad.server.access.componenets.KeycloakAdminProperties;
 import com.rad.server.access.entities.settings.Settings;
 import com.rad.server.access.responses.HttpResponse;
 import com.rad.server.access.services.*;
+import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.AccessToken;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.http.HttpHeaders;
@@ -57,7 +59,6 @@ public class NmsAccessControllers
 
 	@Autowired
 	private HashSet<String> tokenBlackList;
-
 
 
 	@GetMapping("/users")

@@ -152,6 +152,7 @@ public class SettingsServiceImpl implements SettingsService {
             realmRepresentation.setEventsEnabled(events);
             realmRepresentation.setEnabledEventTypes(eventTypes);
             realmRepresentation.setEventsExpiration(24L);
+
             keycloak.realm(tenant.getName()).update(realmRepresentation);
         }
 
