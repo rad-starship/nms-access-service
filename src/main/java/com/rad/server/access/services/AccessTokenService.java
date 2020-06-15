@@ -80,6 +80,9 @@ public class AccessTokenService {
             else if(e.getStatusCode().value() == 404){
                 return new HttpResponse(HttpStatus.NOT_FOUND, "Invalid tenant name").getHttpResponse();
             }
+            else if (e.getStatusCode().value()== 400){
+                return new HttpResponse(HttpStatus.BAD_REQUEST, e.getMessage()).getHttpResponse();
+            }
             else
                 throw new Exception("Unknown Error");
         }

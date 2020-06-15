@@ -184,7 +184,7 @@ public class UserServiceImpl implements UserService {
         for(User user:userRepository.findAll()){
             if(user.getUserName().toLowerCase().equals(username)){
                 long tenantID=getTenantID(realm);
-                for(long id:user.getTenantID()){
+                for(long id:user.getTenantsID()){
                     if(id==tenantID)
                         return true;
                 }
