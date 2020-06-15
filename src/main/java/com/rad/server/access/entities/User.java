@@ -23,18 +23,9 @@ public class User
 	@ElementCollection(fetch = FetchType.EAGER)
 	private List<Long> tenantsID;
 
-
 	public User()
 	{
 		
-	}
-
-	public long getRoleID() {
-		return roleID;
-	}
-
-	public List<Long> getTenantID() {
-		return tenantsID;
 	}
 
 	/**
@@ -79,14 +70,6 @@ public class User
 	public long getId()
 	{
 		return this.id;
-	}
-
-	public void setRoleID(long roleID) {
-		this.roleID = roleID;
-	}
-
-	public void setTenantsID(List<Long> tenantsID) {
-		this.tenantsID = tenantsID;
 	}
 
 	public void setId(long id)
@@ -152,5 +135,20 @@ public class User
 	public List<Long> getTenantsID()
 	{
 		return this.tenantsID;
+	}
+
+	public long getRoleID()
+	{
+		return this.roleID;
+	}
+
+	public void setRoleID(long roleID)
+	{
+		this.roleID = roleID;
+	}
+
+	public void setTenantsID(List<Long> tenantsID)
+	{
+		this.tenantsID = tenantsID;
 	}
 }

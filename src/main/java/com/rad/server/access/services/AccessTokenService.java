@@ -50,6 +50,7 @@ public class AccessTokenService {
         }
         catch (BadRequestException e){
             System.out.println(e.getResponse());
+            return new HttpResponse(HttpStatus.BAD_REQUEST, e.getMessage()).getHttpResponse();
         }
         catch (NotAuthorizedException e){
             return new HttpResponse(HttpStatus.UNAUTHORIZED,"Invalid user name or password").getHttpResponse();
@@ -57,8 +58,6 @@ public class AccessTokenService {
         catch(NotFoundException e){
             return new HttpResponse(HttpStatus.NOT_FOUND, "Invalid tenant name").getHttpResponse();
         }
-
-        return null;
     }
 
     /**

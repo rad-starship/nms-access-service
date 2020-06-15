@@ -88,7 +88,7 @@ public class NmsAccessControllers
 			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 		User tokenUser=getUserFromToken(username);
 		ArrayList<String> tenants=new ArrayList<>();
-		for(long id:tokenUser.getTenantID()){
+		for(long id:tokenUser.getTenantsID()){
 			for(String continent:getTenantFromRepository(id).getContinents()){
 				if(!tenants.contains(continent))
 					tenants.add(continent);
@@ -113,7 +113,7 @@ public class NmsAccessControllers
 				throw new Error();
 			}
 			ArrayList<String> realms=new ArrayList<>();
-			for (Long tenant:user.getTenantID()) {
+			for (Long tenant:user.getTenantsID()) {
 				if(tenantRepository.existsById(tenant)){
 					realms.add(tenantRepository.findById(tenant).get().getName());
 				}
@@ -125,13 +125,13 @@ public class NmsAccessControllers
 					Role role=roleRepository.findById(user.getRoleID()).get();
 					User exists=getUserFromRepositoryByUsername(user.getUserName());
 					if(exists!=null) {
-						if(exists.getTenantID().containsAll(user.getTenantID()))
+						if(exists.getTenantsID().containsAll(user.getTenantsID()))
 							throw new InstanceAlreadyExistsException();
 						else{
 							user.setId(exists.getId());
-							for(long id:exists.getTenantID()){
-								if(!user.getTenantID().contains(id))
-									user.getTenantID().add(id);
+							for(long id:exists.getTenantsID()){
+								if(!user.getTenantsID().contains(id))
+									user.getTenantsID().add(id);
 							}
 						}
 					}
@@ -188,7 +188,7 @@ public class NmsAccessControllers
 				if(userRole.getName().equals("Admin"))
 					return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
 			}
-			for (Long tenants: user.getTenantID()) {
+			for (Long tenants: user.getTenantsID()) {
 				Tenant tenant=getTenantFromRepository(tenants);
 				if(tenant==null)
 					return new HttpResponse(HttpStatus.BAD_REQUEST,"tenant is null").getHttpResponse();
@@ -220,7 +220,7 @@ public class NmsAccessControllers
 		if(oldUser==null)
 			return new HttpResponse(HttpStatus.BAD_REQUEST,"User doesnt exists").getHttpResponse();
 		ArrayList<String> realms=new ArrayList<>();
-		for (Long tenant:oldUser.getTenantID()) {
+		for (Long tenant:oldUser.getTenantsID()) {
 			if(tenantRepository.existsById(tenant)){
 				realms.add(tenantRepository.findById(tenant).get().getName());
 			}
@@ -234,7 +234,7 @@ public class NmsAccessControllers
 				return new HttpResponse(HttpStatus.BAD_REQUEST,"Password doesnt meet the requirements").getHttpResponse();
 			newUser.encodePassword(user.getPassword());
 			newUser.setRoleID(oldUser.getRoleID());
-			newUser.setTenantsID(oldUser.getTenantID());
+			newUser.setTenantsID(oldUser.getTenantsID());
 			userRepository.save(newUser);
 		}
 		ResponseEntity<User> result = new ResponseEntity<>(user,HttpStatus.ACCEPTED);
@@ -569,7 +569,7 @@ public class NmsAccessControllers
 		if(tokenRole.getName().equals("User"))
 			return false;
 		if(tokenRole.getName().equals("Region-Admin")){
-			if(!tokenUser.getTenantID().containsAll(user.getTenantID())){
+			if(!tokenUser.getTenantsID().containsAll(user.getTenantsID())){
 				return false;
 			}
 		}
