@@ -33,32 +33,56 @@ public class AccessTokenService {
     private AccessToken token;
 
     /**
-     * This function access to keycloak server to get Token from login details.
-     * @param loginEntity - an object contains all information for loin
-     * @return On success returns the token, null on failure.
+     * This function creates request params that will be sent to keycloak server for login.
+     * @param loginEntity - an object contains all information for login
+     * @return response of KC server for the login function.
      */
-    public Object getAccessToken(LoginEntity loginEntity){
-        try{
-        Keycloak keycloak  = Keycloak.getInstance(
-                prop.getServerUrl(),
-                loginEntity.getTenant(),
-                loginEntity.getUsername(),
-                loginEntity.getPassword(),
-                clientId
-        );
-        return keycloak.tokenManager().getAccessToken();
+    public Object login(LoginEntity loginEntity){
+        try {
+            MultiValueMap<String, String> requestParams = new LinkedMultiValueMap<>();
+            requestParams.add("username", loginEntity.getUsername());
+            requestParams.add("password", loginEntity.getPassword());
+            requestParams.add("client_id",clientId);
+            requestParams.add("grant_type","password");
+            if(loginEntity.getOtp()!=null)
+                requestParams.add("totp",loginEntity.getOtp());
+
+            return logInUserSession(requestParams,loginEntity.getTenant());
+
+        } catch (Exception e) {
+            return new HttpResponse(HttpStatus.BAD_REQUEST,e.getMessage()).getHttpResponse();
         }
-        catch (BadRequestException e){
-            System.out.println(e.getResponse());
-        }
-        catch (NotAuthorizedException e){
-            return new HttpResponse(HttpStatus.UNAUTHORIZED,"Invalid user name or password").getHttpResponse();
-        }
-        catch(NotFoundException e){
-            return new HttpResponse(HttpStatus.NOT_FOUND, "Invalid tenant name").getHttpResponse();
+    }
+
+    /**
+     * This function sends to the KC server login request.
+     * @param requestParams - params of the login request
+     * @param realm - the realm of the login
+     * @return The response of the KC server for the login.
+     * @throws Exception - if there is unknown exception it will be thrown.
+     */
+    private Object logInUserSession(MultiValueMap<String, String> requestParams,String realm) throws Exception {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(requestParams, headers);
+
+            String url = "http://localhost:8080/auth/realms/" + realm + "/protocol/openid-connect/token";
+            return new RestTemplate().postForEntity(url, request, Object.class);
+            // got response 204, no content
         }
 
-        return null;
+        catch (HttpClientErrorException e){
+            if(e.getStatusCode().value()==401){
+                return new HttpResponse(HttpStatus.UNAUTHORIZED,"Invalid user name or password").getHttpResponse();
+            }
+            else if(e.getStatusCode().value() == 404){
+                return new HttpResponse(HttpStatus.NOT_FOUND, "Invalid tenant name").getHttpResponse();
+            }
+            else
+                throw new Exception("Unknown Error");
+        }
     }
 
     /**
