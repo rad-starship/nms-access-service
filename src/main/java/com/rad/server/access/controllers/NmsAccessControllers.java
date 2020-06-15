@@ -471,15 +471,32 @@ public class NmsAccessControllers
     @PostMapping("/getToken")
 	@ResponseBody
 	public Object login(@RequestBody(required = false) LoginEntity loginEntity){
-		System.out.println(loginEntity);
+		System.out.println("Login Request: User=" + loginEntity.getUsername() + ", Tenant:" + loginEntity.getTenant());
 		return accessTokenService.getAccessToken(loginEntity);
 	}
 
+    static class LogoutRequest
+    {
+    	String refreshToken;
+    	public LogoutRequest()
+    	{
+    		
+    	}
+		public String getRefreshToken()
+		{
+			return this.refreshToken;
+		}
+		public void setRefreshToken(String refreshToken)
+		{
+			this.refreshToken = refreshToken;
+		}
+    }
+    
 	@PostMapping("/logout")
 	@ResponseBody
-	public Object logout(@RequestBody String refreshToken,@RequestHeader HttpHeaders headers){
+	public Object logout(@RequestBody LogoutRequest logoutRequest,@RequestHeader HttpHeaders headers){
 		tokenBlackList.add(headers.get("Authorization").get(0));
-		return accessTokenService.logout(refreshToken);
+		return accessTokenService.logout(logoutRequest.refreshToken);
 	}
 
 	/**

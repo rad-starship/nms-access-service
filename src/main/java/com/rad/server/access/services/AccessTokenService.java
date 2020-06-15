@@ -52,10 +52,10 @@ public class AccessTokenService {
             System.out.println(e.getResponse());
         }
         catch (NotAuthorizedException e){
-            return new HttpResponse(HttpStatus.UNAUTHORIZED,"Unauthorized").getHttpResponse();
+            return new HttpResponse(HttpStatus.UNAUTHORIZED,"Invalid user name or password").getHttpResponse();
         }
         catch(NotFoundException e){
-            return new HttpResponse(HttpStatus.NOT_FOUND,"Not found realm").getHttpResponse();
+            return new HttpResponse(HttpStatus.NOT_FOUND, "Invalid tenant name").getHttpResponse();
         }
 
         return null;
@@ -85,8 +85,13 @@ public class AccessTokenService {
      * @return only refresh token.
      */
     private String parseRefresh(String refreshToken) {
-        String result = refreshToken.split(":")[1];
-        return result.substring(1,result.length()-2);
+    	if (refreshToken.contains(":"))
+    	{
+	        String result = refreshToken.split(":")[1];
+	        return result.substring(1,result.length()-2);
+    	}
+    	
+    	return refreshToken;
     }
 
     /**
