@@ -145,13 +145,19 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 
 	@Bean
 	Settings settingsInit(){
-			Autorization autorization=new Autorization();
-			Token token=new Token(30,600,1500,20);
-			PasswordPolicy passwordPolicy=new PasswordPolicy(365,8,3,1,true);
-			otpPolicy otpPolicy=new otpPolicy(false,"Time Based",8,30);
-			SocialLogin socialLogin=new SocialLogin("None");
-			Authentication authentication=new Authentication(token,passwordPolicy,otpPolicy,socialLogin);
-			initSettings=new Settings(authentication,autorization,true);
+			Settings tmpSettings = settingsService.getFromEs();
+			if(tmpSettings == null) {
+				Autorization autorization = new Autorization();
+				Token token = new Token(30, 600, 1500, 20);
+				PasswordPolicy passwordPolicy = new PasswordPolicy(365, 8, 3, 1, true);
+				otpPolicy otpPolicy = new otpPolicy(false, "Time Based", 8, 30);
+				SocialLogin socialLogin = new SocialLogin("None");
+				Authentication authentication = new Authentication(token, passwordPolicy, otpPolicy, socialLogin);
+				tmpSettings = new Settings(authentication, autorization, true);
+
+				settingsService.saveToEs(tmpSettings);
+			}
+			initSettings = tmpSettings;
 			return initSettings;
 	}
 

@@ -34,4 +34,35 @@ public class Settings {
     public void setEvents(boolean events) {
         this.events = events;
     }
+
+    public String getJson(){
+        boolean first = true;
+        String output = "{";
+        if(authentication!=null){
+            if (first) {
+                first = false;
+            } else {
+                output += ",";
+            }
+            output += "\"authentication\":"+authentication.getJson();
+        }
+        if(authorization!=null){
+            if (first) {
+                first = false;
+            } else {
+                output += ",";
+            }
+            output += "\"authorization\":"+authorization.getJson();
+        }
+
+        if (first) {
+            first = false;
+        } else {
+            output += ",";
+        }
+        output+="\"events\":\""+isEvents()+"\"";
+
+        output+="}";
+        return output;
+    }
 }

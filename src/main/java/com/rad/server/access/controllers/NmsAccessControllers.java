@@ -462,7 +462,10 @@ public class NmsAccessControllers
         System.out.println(settings);
 
 		Settings settings1 = settingsService.parseSettings(settings);
+		System.out.println(settings1.getJson());
 		settingsService.applySettings(settings1);
+
+		settingsService.updateES(settings1);
 
 		return settings;
 
@@ -472,7 +475,7 @@ public class NmsAccessControllers
 	@ResponseBody
 	public Object login(@RequestBody(required = false) LoginEntity loginEntity){
 		System.out.println("Login Request: User=" + loginEntity.getUsername() + ", Tenant:" + loginEntity.getTenant());
-		return accessTokenService.getAccessToken(loginEntity);
+		return accessTokenService.login(loginEntity);
 	}
 
     static class LogoutRequest

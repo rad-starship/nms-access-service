@@ -1,5 +1,8 @@
 package com.rad.server.access.entities.settings;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class Authentication {
 
     private Token token;
@@ -44,5 +47,54 @@ public class Authentication {
 
     public void setSocialLogin(SocialLogin socialLogin) {
         this.socialLogin = socialLogin;
+    }
+
+    public String getJson(){
+        boolean first = true;
+        ObjectMapper mapper = new ObjectMapper();
+        String output = "{";
+        try {
+            if (token != null) {
+                if (first) {
+                    first = false;
+                } else {
+                    output += ",";
+                }
+
+                output += "\"token\":" + mapper.writeValueAsString(token);
+
+
+            }
+            if (passwordPolicy != null) {
+                if (first) {
+                    first = false;
+                } else {
+                    output += ",";
+                }
+                output += "\"passwordPolicy\":"+mapper.writeValueAsString(passwordPolicy);
+
+            }
+            if (otpPolicy != null) {
+                if (first) {
+                    first = false;
+                } else {
+                    output += ",";
+                }
+                output += "\"otpPolicy\":"+mapper.writeValueAsString(otpPolicy);
+
+            }
+            if (socialLogin != null) {
+                if (first) {
+                    first = false;
+                } else {
+                    output += ",";
+                }
+                output += "\"socialLogin\":"+mapper.writeValueAsString(socialLogin);
+            }
+        } catch (JsonProcessingException e) {
+        e.printStackTrace();
+    }
+        output+="}";
+        return output;
     }
 }

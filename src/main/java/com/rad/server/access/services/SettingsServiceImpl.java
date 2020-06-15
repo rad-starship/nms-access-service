@@ -3,6 +3,7 @@ package com.rad.server.access.services;
 import com.rad.server.access.componenets.KeycloakAdminProperties;
 import com.rad.server.access.entities.Tenant;
 import com.rad.server.access.entities.settings.*;
+import com.rad.server.access.presistance.EsConnectionHandler;
 import com.rad.server.access.repositories.TenantRepository;
 import org.apache.tomcat.util.json.JSONParser;
 import org.apache.tomcat.util.json.ParseException;
@@ -11,6 +12,7 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.security.Key;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -48,7 +50,8 @@ public class SettingsServiceImpl implements SettingsService {
 
         Authentication authentication;
         Autorization autorization;
-        Map<String,Object> map = (LinkedHashMap<String, Object>)settings;
+        boolean events;
+        Map<String,Object> map = (Map<String, Object>)settings;
 
         Map<String,Object> authenticationMap = (Map<String, Object>) map.get("authentication");
         if(authenticationMap!=null){
@@ -110,7 +113,12 @@ public class SettingsServiceImpl implements SettingsService {
         else{
             autorization = null;
         }
-        return new Settings(authentication,autorization,(boolean) map.get("events"));
+        if(map.get("events")!=null)
+             events = Boolean.valueOf((String) map.get("events"));
+        else
+            events = false;
+
+        return new Settings(authentication,autorization,events);
 
     }
 
@@ -137,6 +145,7 @@ public class SettingsServiceImpl implements SettingsService {
                 applyOtp(authentication.getOtpPolicy());
             }
         }
+
         applyEvents(settings1.isEvents());
     }
 
@@ -219,5 +228,48 @@ public class SettingsServiceImpl implements SettingsService {
         realm.setSsoSessionMaxLifespan(token.getSsoSessionMax()*60);
         realm.setOfflineSessionIdleTimeout(token.getOfflineSessionIdle()*60);
         realm.setAccessTokenLifespan(token.getAccessTokenLifespan()*60);
+    }
+
+    @Override
+    public Settings getFromEs() {
+        Settings result = null;
+        try {
+            EsConnectionHandler.makeConnection();
+            Map<String, Object> data = EsConnectionHandler.loadSettings();
+            if (data != null)
+                result = parseSettings(data);
+
+            EsConnectionHandler.closeConnection();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    @Override
+    public void saveToEs(Settings tmpSettings) {
+        try {
+            EsConnectionHandler.makeConnection();
+            EsConnectionHandler.saveSettings(tmpSettings);
+            EsConnectionHandler.closeConnection();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void updateES(Settings settings1) {
+        try {
+            EsConnectionHandler.makeConnection();
+            EsConnectionHandler.deleteSettings();
+            EsConnectionHandler.saveSettings(settings1);
+            EsConnectionHandler.closeConnection();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 }
