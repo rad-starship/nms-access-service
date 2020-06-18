@@ -4,6 +4,8 @@ package com.rad.server.access.services;
 
 import com.rad.server.access.componenets.KeycloakAdminProperties;
 import com.rad.server.access.entities.LoginEntity;
+import com.rad.server.access.entities.User;
+import com.rad.server.access.repositories.UserRepository;
 import com.rad.server.access.responses.HttpResponse;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.AccessToken;
@@ -21,6 +23,7 @@ import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
 import java.security.Key;
+import java.util.HashSet;
 
 @Service
 public class AccessTokenService {
@@ -31,6 +34,12 @@ public class AccessTokenService {
 
     @Autowired
     private AccessToken token;
+
+    @Autowired
+    private HashSet<String> tokenBlackList;
+
+    @Autowired
+    private UserRepository userRepository;
 
     /**
      * This function creates request params that will be sent to keycloak server for login.
@@ -154,5 +163,21 @@ public class AccessTokenService {
         String realm = headers[headers.length - 1];
         return realm;
 
+    }
+
+    public boolean isInBlackList(HttpHeaders headers){
+        return tokenBlackList.contains(headers.get("Authorization").get(0));
+    }
+
+    public void addToBlackList(String token){
+        tokenBlackList.add(token);
+    }
+
+    public User getUserFromToken(String username){
+        for (User user: userRepository.findAll()) {
+            if(user.getUserName().toLowerCase().equals(username.toLowerCase()))
+                return user;
+        }
+        return null;
     }
 }

@@ -17,16 +17,18 @@ import java.util.List;
 @Service
 public interface TenantService
 {
-    void addKeycloakTenant(Tenant Tenant);
 
+    Object getTenants();
 
-    void deleteKeycloakTenant(String name);
+    Object addKeycloakTenant(Tenant Tenant);
 
-    void updateKeycloakTenant(Tenant tenant,String name);
+    Object deleteKeycloakTenant(long id);
+
+    Object updateKeycloakTenant(Tenant tenant,long id);
 
     boolean tenantExists(Tenant tenant);
 
     void initKeycloakTenants(TenantRepository repository);
 
-    public void addIdentityProvider(String providerID,String secret,String clientID,String realm);
+    void addIdentityProvider(String providerID,String secret,String clientID,String realm);
 }

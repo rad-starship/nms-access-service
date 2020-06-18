@@ -74,7 +74,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	private TenantRepository tenantRepository;
 
     private Settings initSettings;
-	
+
 	public static void main(String[] args)
 	{
 		SpringApplication.run(NmsAccessApplication.class, args);
@@ -89,7 +89,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 			String ip       = InetAddress.getLocalHost().getHostAddress();
 			String hostName = InetAddress.getLocalHost().getHostName();
 			int port        = applicationContext.getBean(Environment.class).getProperty("server.port", Integer.class, 8080);
-			
+
 			System.out.println("*****************************************************");
 			System.out.println("* NMS Access Service is Ready ");
 			System.out.println("* Host=" + hostName + ", IP=" + ip + ", Port=" + port);
@@ -109,7 +109,9 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 							prop.getCliendId());
 					for(Tenant tenant:tenantRepository.findAll()){
 						RealmResource realm=keycloak.realm(tenant.getName());
-						for(EventRepresentation event:realm.getEvents()){
+						List<EventRepresentation> eventList=realm.getEvents();
+						realm.clearEvents();
+						for(EventRepresentation event:eventList){
 							List<String> details=new ArrayList<>();
 							details.add(event.getClientId());
 							details.add(tenant.getName());
@@ -119,7 +121,6 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 							details.add(event.getDetails().toString());
 							kafkaTemplate.send("events",details.toString());
 						}
-						realm.clearEvents();
 					}
 				}
 			};
@@ -153,7 +154,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 				otpPolicy otpPolicy = new otpPolicy(false, "Time Based", 8, 30);
 				SocialLogin socialLogin = new SocialLogin("None");
 				Authentication authentication = new Authentication(token, passwordPolicy, otpPolicy, socialLogin);
-				tmpSettings = new Settings(authentication, autorization, true);
+				tmpSettings = new Settings(authentication, autorization, true,true);
 
 				settingsService.saveToEs(tmpSettings);
 			}

@@ -7,16 +7,21 @@ import com.rad.server.access.entities.User;
 import com.rad.server.access.repositories.RoleRepository;
 import com.rad.server.access.repositories.TenantRepository;
 import com.rad.server.access.repositories.UserRepository;
+import com.rad.server.access.responses.HttpResponse;
 import org.apache.commons.codec.binary.Base64;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.idm.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.management.InstanceAlreadyExistsException;
 import javax.websocket.OnClose;
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -37,6 +42,11 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Autowired UserRepository userRepository;
+
+    @Autowired
+    AccessTokenService accessTokenService;
+
 
 
 
@@ -52,18 +62,141 @@ public class UserServiceImpl implements UserService {
                 prop.getCliendId());
     }
 
+
+    public List<User> getUsers(){
+        List<User> users =(List<User>) userRepository.findAll();
+        System.out.println("getUsers: " + users);
+        return users;
+    }
+
+    public Object addUser(User user) {
+        try {
+            if (!isTokenUserFromSameTenant(user)) {
+                throw new Error();
+            }
+            ArrayList<String> realms = new ArrayList<>();
+            for (Long tenant : user.getTenantsID()) {
+                if (tenantRepository.existsById(tenant)) {
+                    realms.add(tenantRepository.findById(tenant).get().getName());
+                } else {
+                    throw new NotFoundException();
+                }
+            }
+            if (roleRepository.existsById(user.getRoleID())) {
+                Role role = roleRepository.findById(user.getRoleID()).get();
+                User exists = getUserFromRepositoryByUsername(user.getUserName());
+                if (exists != null) {
+                    if (exists.getTenantsID().containsAll(user.getTenantsID()))
+                        throw new InstanceAlreadyExistsException();
+                    else {
+                        user.setId(exists.getId());
+                        for (long id : exists.getTenantsID()) {
+                            if (!user.getTenantsID().contains(id))
+                                user.getTenantsID().add(id);
+                        }
+                    }
+                }
+                int response = addKeycloakUser(user, realms, role.getName());
+                if (response == 409)
+                    throw new Exception();
+                if (response == 400)
+                    throw new BadRequestException();
+                user.encodePassword(user.getPassword());
+                userRepository.save(user);
+                return user;
+            } else throw new NotFoundException();
+
+        }
+		catch (NotFoundException e){
+        return new HttpResponse(HttpStatus.BAD_REQUEST,"Tenant ID or Role ID Does not exists").getHttpResponse();
+    }
+		catch (InstanceAlreadyExistsException e){
+        return new HttpResponse(HttpStatus.BAD_REQUEST,"Username already exists").getHttpResponse();
+    }
+		catch (java.lang.Error e){
+        return new HttpResponse(HttpStatus.BAD_REQUEST,"keycloak user not authorized").getHttpResponse();
+    }
+		catch (BadRequestException e){
+        return new HttpResponse(HttpStatus.BAD_REQUEST,"Password doesnt meet the requirements").getHttpResponse();
+    }
+		catch (Exception e){
+        return new HttpResponse(HttpStatus.BAD_REQUEST,"Email already exists in the system").getHttpResponse();
+    }
+    }
+
+    public ResponseEntity<?> updateUser(long id,User user){
+        User oldUser=getUserFromRepository(id);
+        if(!isTokenUserFromSameTenant(oldUser))
+            return new HttpResponse(HttpStatus.BAD_REQUEST,"keycloak user not authorized").getHttpResponse();
+        if(oldUser==null)
+            return new HttpResponse(HttpStatus.BAD_REQUEST,"User doesnt exists").getHttpResponse();
+        ArrayList<String> realms=new ArrayList<>();
+        for (Long tenant:oldUser.getTenantsID()) {
+            if(tenantRepository.existsById(tenant)){
+                realms.add(tenantRepository.findById(tenant).get().getName());
+            }
+        }
+        for(String realm:realms) {
+            User newUser = new User(user);
+            newUser.setId(id);
+            newUser.setUserName(oldUser.getUserName());
+            boolean result=updateKeycloakUser(user, oldUser.getUserName(),user.getPassword(),realm);
+            if(!result)
+                return new HttpResponse(HttpStatus.BAD_REQUEST,"Password doesnt meet the requirements").getHttpResponse();
+            newUser.encodePassword(user.getPassword());
+            newUser.setRoleID(oldUser.getRoleID());
+            newUser.setTenantsID(oldUser.getTenantsID());
+            userRepository.save(newUser);
+        }
+        ResponseEntity<User> result = new ResponseEntity<>(user,HttpStatus.ACCEPTED);
+        return new HttpResponse(result).getHttpResponse();
+    }
+
+
+    public Object getContinentsByToken(String username){
+        User tokenUser=accessTokenService.getUserFromToken(username);
+        ArrayList<String> tenants=new ArrayList<>();
+        for(long id:tokenUser.getTenantsID()){
+            for(String continent:getTenantFromRepository(id).getContinents()){
+                if(!tenants.contains(continent))
+                    tenants.add(continent);
+            }
+        }
+        return tenants;
+    }
+
+
     /**
      * This function deletes the user from the keycloak servers by username and realm
-     * @param userName The deleted username
-     * @param tenant The tenant the user belongs to
+     * @param id of the deleted username
      */
 
     @Override
-    public void deleteKeycloakUser(String userName,String tenant){
-        Keycloak keycloak=getKeycloakInstance();
-        RealmResource realmResource = keycloak.realm(tenant);
-        UsersResource users =  realmResource.users();
-        users.delete(users.search(userName).get(0).getId());
+    public ResponseEntity<?> deleteKeycloakUser(long id){
+
+        User user;
+        user=getUserFromRepository(id);
+        if(user==null){
+            System.out.println("The user doesnt exist.");
+            return new HttpResponse(HttpStatus.BAD_REQUEST,"user Doesnt Exist").getHttpResponse();
+        }
+        if(!isTokenUserFromSameTenant(user))
+            return new HttpResponse(HttpStatus.BAD_REQUEST,"keycloak user not authorized").getHttpResponse();
+        if(user.getUserName().equals("admin"))
+            return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
+        for (Long tenants: user.getTenantsID()) {
+            Tenant tenant=getTenantFromRepository(tenants);
+            if(tenant==null)
+                return new HttpResponse(HttpStatus.BAD_REQUEST,"tenant is null").getHttpResponse();
+            Keycloak keycloak=getKeycloakInstance();
+            RealmResource realmResource = keycloak.realm(tenant.getName());
+            UsersResource users =  realmResource.users();
+            users.delete(users.search(user.getUserName()).get(0).getId());
+        }
+        userRepository.delete(user);
+        System.out.println("User deleted successfully.");
+        ResponseEntity<User> result = new ResponseEntity<>(user, HttpStatus.ACCEPTED);
+        return new HttpResponse(result).getHttpResponse();
     }
 
 
@@ -213,6 +346,73 @@ public class UserServiceImpl implements UserService {
         }
 
         return 0;
+    }
+
+    /**
+     * Function that returns tenant from tenantRepository
+     * @param id - id of the wanted tenant
+     * @return Tenant represents the wanted tenant, null if tenant not exist.
+     */
+    private Tenant getTenantFromRepository(long id) {
+        Optional<Tenant> tenantExists = tenantRepository.findById(id);
+        return tenantExists.orElse(null);
+    }
+
+    /**
+     * Function that returns role from RoleRepository
+     * @param id - id of the wanted role
+     * @return Role represents the wanted role, null if role not exist.
+     */
+    private Role getRoleFromRepository(long id) {
+        Optional<Role> roleExists = roleRepository.findById(id);
+        return roleExists.orElse(null);
+    }
+
+    /**
+     * Function that returns user from userRepository
+     * @param id - id of the wanted user
+     * @return User represents the wanted user, null if user not exist.
+     */
+    private User getUserFromRepository(long id) {
+        Optional<User> userExists = userRepository.findById(id);
+        return userExists.orElse(null);
+    }
+
+    /**
+     * Function that returns user from userRepository
+     * @param username - username of the wanted user
+     * @return User represents the wanted user, null if user not exist.
+     */
+    private User getUserFromRepositoryByUsername(String username) {
+        for(User user:userRepository.findAll()){
+            if(user.getUserName().equals(username))
+                return getUserFromRepository(user.getId());
+        }
+        return null;
+    }
+
+    /**
+     * This function checks if the logged in user is from the same tenant to enforce requests authorization such as DELETE, PUT, POST
+     * @param user
+     * @return
+     */
+    private boolean isTokenUserFromSameTenant(User user){
+        User tokenUser=accessTokenService.getUserFromToken(token.getPreferredUsername());
+        if(tokenUser==null)
+            return false;
+        Role tokenRole=getRoleFromRepository(tokenUser.getRoleID());
+        if(tokenRole==null)
+            return false;
+        if(tokenRole.getName().equals("Admin"))
+            return true;
+        if(tokenRole.getName().equals("User"))
+            return false;
+        if(tokenRole.getName().equals("Region-Admin")){
+            if(!tokenUser.getTenantsID().containsAll(user.getTenantsID())){
+                return false;
+            }
+        }
+        return true;
     }
 
 }

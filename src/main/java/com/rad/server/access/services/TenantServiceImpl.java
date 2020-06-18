@@ -1,18 +1,25 @@
 package com.rad.server.access.services;
 
 import com.rad.server.access.componenets.KeycloakAdminProperties;
+import com.rad.server.access.entities.Role;
 import com.rad.server.access.entities.Tenant;
 import com.rad.server.access.entities.User;
 import com.rad.server.access.entities.settings.PasswordPolicy;
 import com.rad.server.access.entities.settings.Settings;
 import com.rad.server.access.entities.settings.Token;
 import com.rad.server.access.entities.settings.otpPolicy;
+import com.rad.server.access.repositories.RoleRepository;
 import com.rad.server.access.repositories.TenantRepository;
+import com.rad.server.access.repositories.UserRepository;
+import com.rad.server.access.responses.HttpResponse;
 import org.apache.commons.codec.binary.Base64;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.*;
+import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.idm.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
@@ -30,6 +37,18 @@ public class TenantServiceImpl implements TenantService {
 
     @Autowired
     private Settings settings;
+
+    @Autowired
+    private TenantRepository tenantRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+    
+    @Autowired
+    private AccessToken token;
 
     private Map<String,ClientRepresentation> clientRepresentationMap = new ConcurrentHashMap<>();
     final String webUri = "http://localhost:4200/*";
@@ -51,23 +70,41 @@ public class TenantServiceImpl implements TenantService {
                 prop.getCliendId());
     }
 
+    public Object getTenants(){
+        List<Tenant> tenants = (List<Tenant>) tenantRepository.findAll();
+        System.out.println("getTenants: " + tenants);
+        return tenants;
+    }
+
+
     /**
      * This function creates a new tenant(realm) in the keycloak server and configures it to match the current settings
      * @param tenant
      */
     @Override
-    public void addKeycloakTenant(Tenant tenant) {
-        Keycloak keycloak=getKeycloakInstance();
-        Token token=settings.getAuthentication().getToken();
-        otpPolicy otpPolicy=settings.getAuthentication().getOtpPolicy();
-        RealmRepresentation realm=new RealmRepresentation();
-        realm.setRealm(tenant.getName());
-        realm.setEnabled(true);
-        settingsService.applyTokenToRealm(token, realm);
-        keycloak.realms().create(realm);
-        addAllClients(tenant.getName());
-        if(otpPolicy.isEnabled())
-            setOTP(tenant.getName());
+    public Object addKeycloakTenant(Tenant tenant) {
+        try {
+
+            System.out.println("addTenant: " + tenant);
+            tenantRepository.save(tenant);
+
+            Keycloak keycloak = getKeycloakInstance();
+            Token token = settings.getAuthentication().getToken();
+            otpPolicy otpPolicy = settings.getAuthentication().getOtpPolicy();
+            RealmRepresentation realm = new RealmRepresentation();
+            realm.setRealm(tenant.getName());
+            realm.setEnabled(true);
+            settingsService.applyTokenToRealm(token, realm);
+            keycloak.realms().create(realm);
+            addAllClients(tenant.getName());
+            if (otpPolicy.isEnabled())
+                setOTP(tenant.getName());
+
+            return tenant;
+        }
+        catch (Exception e){
+            return new HttpResponse(HttpStatus.BAD_REQUEST,"Tenant already exists").getHttpResponse();
+        }
     }
 
     @Override
@@ -154,25 +191,53 @@ public class TenantServiceImpl implements TenantService {
 
     /**
      * This function removes the keycloak tenant by name
-     * @param name
+     * @param id of the realm to delete
      */
     @Override
-    public void deleteKeycloakTenant(String name) {
-        Keycloak keycloak=getKeycloakInstance();
-        keycloak.realms().realm(name).remove();
+    public Object deleteKeycloakTenant(long id) {
+        Tenant tenant;
+        tenant=getTenantFromRepository(id);
+        if(tenant!=null) {
+            if(tenant.getName().equals("Admin"))
+                return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
+            User tokenUser=getUserFromToken(token.getPreferredUsername());
+            if(!getRoleFromRepository(tokenUser.getRoleID()).getPermissions().contains("all")){
+                return new HttpResponse(HttpStatus.BAD_REQUEST,"Keycloak user unauthorized").getHttpResponse();
+            }
+            tenantRepository.delete(tenant);
+            Keycloak keycloak=getKeycloakInstance();
+            keycloak.realms().realm(tenant.getName()).remove();
+            ResponseEntity<Tenant> result = new ResponseEntity<Tenant>(tenant,HttpStatus.ACCEPTED);
+            return result;
+        }
+        else
+            return new HttpResponse(HttpStatus.BAD_REQUEST,"wrong tenant id");
+
     }
 
     /**
      * This function updates an existing keycloak tenant to match the new tenant
      * @param tenant The new tenant
-     * @param name
+     * @param id of the tenant to update
      */
     @Override
-    public void updateKeycloakTenant(Tenant tenant, String name) {
+    public Object updateKeycloakTenant(Tenant tenant,long id) {
+
+        Tenant oldTenant=getTenantFromRepository(id);
+        if(oldTenant==null) {
+            return new HttpResponse(HttpStatus.BAD_REQUEST,"The tenant does not exist").getHttpResponse();
+        }
+        Tenant newTenant=new Tenant(tenant.getName(),tenant.getContinents());
+        newTenant.setId(id);
+
         Keycloak keycloak=getKeycloakInstance();
         RealmRepresentation realm=new RealmRepresentation();
         realm.setRealm(tenant.getName());
-        keycloak.realms().realm(name).update(realm);
+        keycloak.realms().realm(oldTenant.getName()).update(realm);
+
+        tenantRepository.save(newTenant);
+        return tenant;
+
     }
 
     /**
@@ -224,7 +289,34 @@ public class TenantServiceImpl implements TenantService {
             }
         }
 
+    }
 
+    /**
+     * Function that returns tenant from tenantRepository
+     * @param id - id of the wanted tenant
+     * @return Tenant represents the wanted tenant, null if tenant not exist.
+     */
+    private Tenant getTenantFromRepository(long id) {
+        Optional<Tenant> tenantExists = tenantRepository.findById(id);
+        return tenantExists.orElse(null);
+    }
+
+    /**
+     * Function that returns role from RoleRepository
+     * @param id - id of the wanted role
+     * @return Role represents the wanted role, null if role not exist.
+     */
+    private Role getRoleFromRepository(long id) {
+        Optional<Role> roleExists = roleRepository.findById(id);
+        return roleExists.orElse(null);
+    }
+
+    private User getUserFromToken(String username){
+        for (User user: userRepository.findAll()) {
+            if(user.getUserName().toLowerCase().equals(username.toLowerCase()))
+                return user;
+        }
+        return null;
     }
 
 

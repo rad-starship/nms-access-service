@@ -7,7 +7,7 @@ import org.keycloak.representations.idm.RealmRepresentation;
 
 public interface SettingsService {
 
-     Settings parseSettings(Object settings) ;
+     Settings parseSettings(Object settings) throws Exception;
 
     void applySettings(Settings settings1);
     void applyTokenToRealm(Token token, RealmRepresentation realm);

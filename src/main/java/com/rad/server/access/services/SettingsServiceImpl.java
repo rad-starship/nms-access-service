@@ -5,11 +5,13 @@ import com.rad.server.access.entities.Tenant;
 import com.rad.server.access.entities.settings.*;
 import com.rad.server.access.presistance.EsConnectionHandler;
 import com.rad.server.access.repositories.TenantRepository;
+import com.rad.server.access.responses.HttpResponse;
 import org.apache.tomcat.util.json.JSONParser;
 import org.apache.tomcat.util.json.ParseException;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -29,6 +31,7 @@ public class SettingsServiceImpl implements SettingsService {
     private TenantRepository repository;
 
 
+
     
     private Keycloak getKeycloakInstance(){
         return Keycloak.getInstance(
@@ -46,79 +49,86 @@ public class SettingsServiceImpl implements SettingsService {
      * @return Settings object with null on missing fields.
      */
     @Override
-    public Settings parseSettings(Object settings)  {
+    public Settings parseSettings(Object settings) throws Exception {
 
-        Authentication authentication;
-        Autorization autorization;
-        boolean events;
-        Map<String,Object> map = (Map<String, Object>)settings;
+            Authentication authentication;
+            Autorization autorization;
+            boolean events, isOnline;
+            Map<String, Object> map = (Map<String, Object>) settings;
 
-        Map<String,Object> authenticationMap = (Map<String, Object>) map.get("authentication");
-        if(authenticationMap!=null){
-            Token token;
-            PasswordPolicy passwordPolicy;
-            otpPolicy otpPolicy;
-            SocialLogin socialLogin;
+            Map<String, Object> authenticationMap = (Map<String, Object>) map.get("authentication");
+            if (authenticationMap != null) {
+                Token token;
+                PasswordPolicy passwordPolicy;
+                otpPolicy otpPolicy;
+                SocialLogin socialLogin;
 
-            Map<String,Object> tokenMap = (Map<String, Object>) authenticationMap.get("token");
-            if(tokenMap!=null){
-                token = new Token((int)tokenMap.get("ssoSessionIdle"),(int)tokenMap.get("ssoSessionMax"),(int)tokenMap.get("offlineSessionIdle"),(int)tokenMap.get("accessTokenLifespan"));
+                Map<String, Object> tokenMap = (Map<String, Object>) authenticationMap.get("token");
+                if (tokenMap != null) {
+                    token = new Token((int) tokenMap.get("ssoSessionIdle"), (int) tokenMap.get("ssoSessionMax"), (int) tokenMap.get("offlineSessionIdle"), (int) tokenMap.get("accessTokenLifespan"));
+                    if(token.getSsoSessionIdle()<=0 ||token.getSsoSessionMax()<=0||token.getOfflineSessionIdle()<=0||token.getAccessTokenLifespan()<=0)
+                        throw new Exception();
+                } else {
+                    token = null;
+                }
+
+                Map<String, Object> passwordMap = (Map<String, Object>) authenticationMap.get("passwordPolicy");
+                if (passwordMap != null) {
+                    passwordPolicy = new PasswordPolicy((int) passwordMap.get("expirePassword"),
+                            (int) passwordMap.get("minimumLength"),
+                            (int) passwordMap.get("notRecentlyUsed"),
+                            (int) passwordMap.get("digits"),
+                            (boolean) passwordMap.get("notUsername"));
+                    if(passwordPolicy.getMinimumLength()<=0 ||passwordPolicy.getNotRecentlyUsed()<=0||passwordPolicy.getDigits()<=0)
+                        throw new Exception();
+                } else {
+                    passwordPolicy = null;
+                }
+
+                Map<String, Object> otpMap = (Map<String, Object>) authenticationMap.get("otpPolicy");
+                if (otpMap != null) {
+                    otpPolicy = new otpPolicy((boolean) otpMap.get("enabled"),
+                            (String) otpMap.get("optType"),
+                            (int) otpMap.get("numberOfDigits"),
+                            (int) otpMap.get("optTokenPeriod")
+                    );
+                    if(otpPolicy.getOptTokenPeriod()<=0 ||otpPolicy.getNumberOfDigits()<=0)
+                        throw new Exception();
+                } else {
+                    otpPolicy = null;
+                }
+
+                Map<String, Object> socialLoginMap = (Map<String, Object>) authenticationMap.get("socialLogin");
+                if (socialLoginMap != null) {
+                    socialLogin = new SocialLogin((String) socialLoginMap.get("identityProvider"));
+                } else {
+                    socialLogin = null;
+                }
+
+                authentication = new Authentication(token, passwordPolicy, otpPolicy, socialLogin);
+
+            } else {
+                authentication = null;
             }
-            else{
-                token = null;
+            Map<String, Object> authorizationMap = (Map<String, Object>) map.get("authorization");
+            if (authorizationMap != null) {
+                autorization = new Autorization();
+            } else {
+                autorization = null;
             }
+            if (map.get("events") != null)
+                events = Boolean.valueOf((String) map.get("events"));
+            else
+                events = true;
 
-            Map<String,Object> passwordMap = (Map<String, Object>) authenticationMap.get("passwordPolicy");
-            if(passwordMap!=null){
-                passwordPolicy = new PasswordPolicy((int)passwordMap.get("expirePassword"),
-                                                    (int)passwordMap.get("minimumLength"),
-                                                    (int)passwordMap.get("notRecentlyUsed"),
-                                                    (int)passwordMap.get("digits"),
-                                                    (boolean)passwordMap.get("notUsername"));
-            }
-            else{
-                passwordPolicy = null;
-            }
+            if (map.get("isOnline") != null)
+                isOnline = Boolean.valueOf((String) map.get("isOnline"));
+            else
+                isOnline = true;
 
-            Map<String,Object> otpMap = (Map<String, Object>) authenticationMap.get("otpPolicy");
-            if(otpMap!=null){
-                otpPolicy = new otpPolicy((boolean)otpMap.get("enabled"),
-                                        (String)otpMap.get("optType"),
-                                        (int)otpMap.get("numberOfDigits"),
-                                        (int)otpMap.get("optTokenPeriod")
-                                         );
-            }
-            else{
-                otpPolicy = null;
-            }
+            return new Settings(authentication, autorization, events, isOnline);
 
-            Map<String,Object> socialLoginMap = (Map<String, Object>) authenticationMap.get("socialLogin");
-            if(socialLoginMap!=null){
-                socialLogin = new SocialLogin((String)socialLoginMap.get("identityProvider"));
-            }
-            else{
-                socialLogin = null;
-            }
 
-            authentication = new Authentication(token,passwordPolicy,otpPolicy,socialLogin);
-
-        }
-        else{
-            authentication = null;
-        }
-        Map<String,Object> authorizationMap = (Map<String, Object>) map.get("authorization");
-        if(authorizationMap!=null){
-            autorization = new Autorization();
-        }
-        else{
-            autorization = null;
-        }
-        if(map.get("events")!=null)
-             events = Boolean.valueOf((String) map.get("events"));
-        else
-            events = false;
-
-        return new Settings(authentication,autorization,events);
 
     }
 
@@ -243,6 +253,9 @@ public class SettingsServiceImpl implements SettingsService {
         }
         catch (IOException e) {
             e.printStackTrace();
+        }
+        catch(Exception e){
+           e.printStackTrace();
         }
         return result;
     }

@@ -4,11 +4,13 @@ public class Settings {
     Authentication authentication;
     Autorization authorization;
     boolean events;
+    boolean isOnline;
 
-    public Settings(Authentication authentication, Autorization authorization,boolean events) {
+    public Settings(Authentication authentication, Autorization authorization,boolean events,boolean isOnline) {
         this.authentication = authentication;
         this.authorization = authorization;
         this.events=events;
+        this.isOnline=isOnline;
     }
 
     public Authentication getAuthentication() {
@@ -33,6 +35,14 @@ public class Settings {
 
     public void setEvents(boolean events) {
         this.events = events;
+    }
+
+    public boolean isOnline() {
+        return isOnline;
+    }
+
+    public void setOnline(boolean online) {
+        isOnline = online;
     }
 
     public String getJson(){
