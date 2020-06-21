@@ -22,6 +22,8 @@ public interface UserService
 {
     List<User> getUsers();
 
+    Object getUser(long id);
+
     int addKeycloakUser(User user, ArrayList<String> tenant, String role);
 
     ResponseEntity<?> deleteKeycloakUser(long id);

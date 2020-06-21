@@ -30,6 +30,9 @@ public class SettingsServiceImpl implements SettingsService {
     @Autowired
     private TenantRepository repository;
 
+    @Autowired
+    Settings settings;
+
 
 
     
@@ -41,6 +44,10 @@ public class SettingsServiceImpl implements SettingsService {
                 prop.getUsername(), // ​​administrator account
                 prop.getPassword(), // ​​administrator password
                 prop.getCliendId());
+    }
+
+    public Settings getSettings(){
+        return settings;
     }
 
     /**

@@ -53,6 +53,15 @@ public class NmsAccessControllers
 		return userService.getUsers();
 	}
 
+	@GetMapping("/users/{id}")
+	@ResponseBody
+	public Object getUsers(@RequestHeader HttpHeaders headers,@PathVariable long id)
+	{
+		if(accessTokenService.isInBlackList(headers))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+		return userService.getUser(id);
+	}
+
 
 	/**
 	 * This function returns the continent list that the logged in user is allowed to watch in health service
@@ -293,6 +302,16 @@ public class NmsAccessControllers
 			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 		return tenantService.updateKeycloakTenant(tenant,id);
 	}
+
+	@GetMapping("/settings")
+	@ResponseBody
+	public Object getSettings(@RequestHeader HttpHeaders headers)
+	{
+		if(accessTokenService.isInBlackList(headers))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+		return settingsService.getSettings();
+	}
+
 
 	@PostMapping("/settings")
     @ResponseBody

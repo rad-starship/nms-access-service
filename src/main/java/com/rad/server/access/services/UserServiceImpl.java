@@ -69,6 +69,13 @@ public class UserServiceImpl implements UserService {
         return users;
     }
 
+    public Object getUser(long id){
+        User user=getUserFromRepository(id);
+        if(user==null)
+            return new HttpResponse(HttpStatus.BAD_REQUEST,"User doesnt exist").getHttpResponse();
+        return user;
+    }
+
     public Object addUser(User user) {
         try {
             if (!isTokenUserFromSameTenant(user)) {
