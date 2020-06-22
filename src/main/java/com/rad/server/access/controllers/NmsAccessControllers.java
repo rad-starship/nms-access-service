@@ -44,9 +44,13 @@ public class NmsAccessControllers
 	@Autowired
 	private RoleRepository	roleRepository;
 
+    @Autowired
+    private Settings settings;
+
     //***********************************************************************
     //                          Users APIs
     //***********************************************************************
+
 
 	@GetMapping("/users")
 	@ResponseBody
@@ -318,7 +322,7 @@ public class NmsAccessControllers
 	{
 		if(accessTokenService.isInBlackList(headers))
 			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
-		return settingsService.getSettings();
+		return settings;
 	}
 
 

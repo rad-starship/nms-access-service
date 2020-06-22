@@ -12,8 +12,6 @@ public interface SettingsService {
     void applySettings(Settings settings1);
     void applyTokenToRealm(Token token, RealmRepresentation realm);
 
-    Settings getSettings();
-
     Settings getFromEs();
 
     void saveToEs(Settings tmpSettings);

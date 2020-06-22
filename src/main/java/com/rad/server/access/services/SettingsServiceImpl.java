@@ -32,8 +32,7 @@ public class SettingsServiceImpl implements SettingsService {
     @Autowired
     private TenantRepository repository;
 
-//    @Autowired
-//    Settings settings;
+
 
 
 
@@ -48,9 +47,6 @@ public class SettingsServiceImpl implements SettingsService {
                 prop.getCliendId());
     }
 
-    public Settings getSettings(){
-        return null;
-    }
 
     /**
      * The function goes over the Json received in the request and parse it to Settings Object.
