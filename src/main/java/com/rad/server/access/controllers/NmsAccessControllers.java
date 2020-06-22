@@ -44,6 +44,10 @@ public class NmsAccessControllers
 	@Autowired
 	private RoleRepository	roleRepository;
 
+    //***********************************************************************
+    //                          Users APIs
+    //***********************************************************************
+
 	@GetMapping("/users")
 	@ResponseBody
 	public Object getUsers(@RequestHeader HttpHeaders headers)
@@ -62,14 +66,12 @@ public class NmsAccessControllers
 		return userService.getUser(id);
 	}
 
-
 	/**
 	 * This function returns the continent list that the logged in user is allowed to watch in health service
 	 * @param headers
 	 * @param username
 	 * @return
 	 */
-
 	@GetMapping("/users/getContinentsByToken/{username}")
 	@ResponseBody
 	public Object getContinentsByToken(@RequestHeader HttpHeaders headers,@PathVariable String username)
@@ -98,7 +100,6 @@ public class NmsAccessControllers
 	 * @param id
 	 * @return
 	 */
-
 	@DeleteMapping("/users/{id}")
 	@ResponseBody
 	public ResponseEntity<?> deleteUser(@PathVariable long id,@RequestHeader HttpHeaders headers) {
@@ -107,8 +108,6 @@ public class NmsAccessControllers
 		return userService.deleteKeycloakUser(id);
 	}
 
-
-
 	/**
 	 * This function updates a registered user by id if it exists
 	 * @param id
@@ -116,13 +115,16 @@ public class NmsAccessControllers
 	 * @return
 	 */
 	@PutMapping("/users/{id}")
-
 	public ResponseEntity<?> updateUser(@PathVariable long id,@RequestBody User user,@RequestHeader HttpHeaders headers){
 		if(accessTokenService.isInBlackList(headers))
 			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
 		return userService.updateUser(id,user);
 	}
-	
+
+    //***********************************************************************
+    //                          Roles APIs
+    //***********************************************************************
+
 	@GetMapping("/roles")
 	@ResponseBody
 	public Object getRoles(@RequestHeader HttpHeaders headers)
@@ -179,7 +181,6 @@ public class NmsAccessControllers
 		}
 	}
 
-
 	/**
 	 * This function deletes a role from the repository and the keycloak servers by role name
 	 * @param roleName
@@ -208,7 +209,8 @@ public class NmsAccessControllers
 
 
 }
-	/**
+
+    /**
 	 * This function deletes a role from the repository and the keycloak servers by role ID
 	 * @param roleId
 	 * @return
@@ -248,7 +250,9 @@ public class NmsAccessControllers
 		return permissions;
 	}
 
-
+    //***********************************************************************
+    //                          Tenants APIs
+    //***********************************************************************
 	@GetMapping("/tenants")
 	@ResponseBody
 	public Object getTenants(@RequestHeader HttpHeaders headers)
@@ -303,6 +307,11 @@ public class NmsAccessControllers
 		return tenantService.updateKeycloakTenant(tenant,id);
 	}
 
+
+    //***********************************************************************
+    //                          Settings APIs
+    //***********************************************************************
+
 	@GetMapping("/settings")
 	@ResponseBody
 	public Object getSettings(@RequestHeader HttpHeaders headers)
@@ -334,6 +343,11 @@ public class NmsAccessControllers
 		}
 
     }
+
+
+    //***********************************************************************
+    //                          LOGIN/LOGOUT APIs
+    //***********************************************************************
 
     @PostMapping("/getToken")
 	@ResponseBody
