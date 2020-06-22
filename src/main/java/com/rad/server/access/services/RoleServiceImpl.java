@@ -65,7 +65,7 @@ public class RoleServiceImpl implements RoleService {
     private List<Map<String, String>> getNonComposites() {
         List<Map<String,String>> output = new ArrayList<>();
         for (Role role :roleRepository.findAll()){
-            if (role.getPermissions().size()==0 && !role.getName().equals("offline_access")){
+            if (role.getPermissions().size()==0 && !role.getName().equals("offline_access") && !role.getName().equals("uma_authorization")){
                 Map<String,String> record = new ConcurrentHashMap<>();
                 record.put("name",role.getName());
                 record.put("Id",String.valueOf(role.getId()));
@@ -200,7 +200,7 @@ public class RoleServiceImpl implements RoleService {
         roles.list().forEach(role->
         {
 
-            Role newRole = new Role(role.getId(), role.getName());
+            Role newRole = new Role( role.getName());
             if(role.isComposite()){
                 List<String> permissions = new LinkedList<>();
                 for (RoleRepresentation permission :roles.get(role.getName()).getRoleComposites()){
@@ -292,14 +292,16 @@ public class RoleServiceImpl implements RoleService {
         RoleResource beforeRole  = roles.get(role.getName());
         RoleRepresentation newRep = new RoleRepresentation();
         newRep.setName(update.getName());
+        newRep.setComposite(true);
 
         List<RoleRepresentation> oldComposites = new ArrayList<>(beforeRole.getRoleComposites());
-        List<RoleRepresentation> newComposites = getPermissions(update.getPermissions(),"Admin");
-
-        beforeRole.update(newRep);
+        List<RoleRepresentation> newComposites = getPermissions(update.getPermissions(),getRealmFromToken());
         if(!oldComposites.isEmpty())
             beforeRole.deleteComposites(oldComposites);
         beforeRole.addComposites(newComposites);
+        beforeRole.update(newRep);
+
+
 
 
     }

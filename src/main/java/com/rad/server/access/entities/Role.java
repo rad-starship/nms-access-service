@@ -10,7 +10,6 @@ public class Role
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Id
 	private long	id;
-	private String kcId;
 	private String	name;
 
 
@@ -22,12 +21,7 @@ public class Role
 		
 	}
 	
-	public Role(String id,String name)
-	{
-		this.kcId = id;
-		this.name = name;
-		permissions = new LinkedList<>();
-	}
+
 
 	public Role(String name) {
 		this.name = name;

@@ -41,6 +41,7 @@ public class AccessTokenService {
     @Autowired
     private UserRepository userRepository;
 
+
     /**
      * This function creates request params that will be sent to keycloak server for login.
      * @param loginEntity - an object contains all information for login
@@ -77,7 +78,7 @@ public class AccessTokenService {
 
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(requestParams, headers);
 
-            String url = "http://localhost:8080/auth/realms/" + realm + "/protocol/openid-connect/token";
+            String url = prop.getServerUrl()+"/realms/" + realm + "/protocol/openid-connect/token";
             return new RestTemplate().postForEntity(url, request, Object.class);
             // got response 204, no content
         }
@@ -143,7 +144,7 @@ public class AccessTokenService {
            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(requestParams, headers);
 
            String realm = getRealmFromToken();
-           String url = "http://localhost:8080/auth/realms/" + getRealmFromToken() + "/protocol/openid-connect/logout";
+           String url = prop.getServerUrl()+"/auth/realms/" + getRealmFromToken() + "/protocol/openid-connect/logout";
            return new RestTemplate().postForEntity(url, request, Object.class);
            // got response 204, no content
        }

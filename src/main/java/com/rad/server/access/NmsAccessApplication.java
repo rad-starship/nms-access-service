@@ -147,6 +147,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	@Bean
 	Settings settingsInit(){
 			Settings tmpSettings = settingsService.getFromEs();
+//		Settings tmpSettings = null;
 			if(tmpSettings == null) {
 				Autorization autorization = new Autorization();
 				Token token = new Token(30, 600, 1500, 20);

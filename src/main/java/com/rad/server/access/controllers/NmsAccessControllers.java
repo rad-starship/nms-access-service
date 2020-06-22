@@ -175,7 +175,7 @@ public class NmsAccessControllers
 			return roleService.updateRole(roleId, roleDetails);
 		}
 			catch(Exception e){
-			return new Role("NotFound");
+				return new HttpResponse(HttpStatus.BAD_REQUEST,"Role doesnt exists").getHttpResponse();
 		}
 	}
 
