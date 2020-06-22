@@ -1,6 +1,7 @@
 package com.rad.server.access.presistance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rad.server.access.componenets.EsProperties;
 import com.rad.server.access.entities.settings.Settings;
 import org.apache.http.HttpHost;
 import org.elasticsearch.ElasticsearchException;
@@ -17,11 +18,14 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.*;
 
 public class EsConnectionHandler {
+    @Autowired
+    private static EsProperties prop;
 
     //The config parameters for the connection
     private static final String HOST = "localhost";
@@ -36,7 +40,7 @@ public class EsConnectionHandler {
 
 
     public static synchronized RestHighLevelClient makeConnection() {
-
+        //System.out.println("************\n\n\n HOST= "+HOST + "PORT = "+PORT_ONE+"\n\n\n\n************");
         if(restHighLevelClient == null) {
             restHighLevelClient = new RestHighLevelClient(
                     RestClient.builder(

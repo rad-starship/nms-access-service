@@ -13,6 +13,7 @@ import com.rad.server.access.repositories.TenantRepository;
 import com.rad.server.access.repositories.UserRepository;
 import com.rad.server.access.responses.HttpResponse;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.http.conn.HttpHostConnectException;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.AccessToken;
@@ -22,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import javax.ws.rs.ProcessingException;
 import java.security.Key;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -247,14 +249,22 @@ public class TenantServiceImpl implements TenantService {
      */
     @Override
     public boolean tenantExists(Tenant tenant){
-        Keycloak keycloak=getKeycloakInstance();
-        RealmsResource realms=keycloak.realms();
-        List<RealmRepresentation> existingRealms=realms.findAll();
-        for (RealmRepresentation r:existingRealms) {
-            if(r.getRealm().equals(tenant.getName()))
-                return true;
+        try {
+            Keycloak keycloak = getKeycloakInstance();
+
+
+            RealmsResource realms = keycloak.realms();
+            List<RealmRepresentation> existingRealms = realms.findAll();
+            for (RealmRepresentation r : existingRealms) {
+                if (r.getRealm().equals(tenant.getName()))
+                    return true;
+            }
+            return false;
         }
-        return false;
+        catch(ProcessingException e){
+            System.out.println("Unable to connect KC");
+            return false;
+        }
     }
 
     /**
@@ -263,32 +273,37 @@ public class TenantServiceImpl implements TenantService {
      * @param repository
      */
     public void initKeycloakTenants(TenantRepository repository){
-        Keycloak keycloak=getKeycloakInstance();
-        for (Tenant t:repository.findAll()) {
-            if(!tenantExists(t)) {
-                addKeycloakTenant(t);
-                addIdentityProvider("google","lMfvuhAZjvm66wLQEyNtUY1Q","604757352616-tvcgf7nefknumcgoo27q8c5bmeie0sb9.apps.googleusercontent.com\n",t.getName());
+        try {
+            Keycloak keycloak = getKeycloakInstance();
+            for (Tenant t : repository.findAll()) {
+                if (!tenantExists(t)) {
+                    addKeycloakTenant(t);
+                    addIdentityProvider("google", "lMfvuhAZjvm66wLQEyNtUY1Q", "604757352616-tvcgf7nefknumcgoo27q8c5bmeie0sb9.apps.googleusercontent.com\n", t.getName());
+                }
+            }
+            for (RealmRepresentation r : keycloak.realms().findAll()) {
+                if (r.getRealm().equals("master"))
+                    continue;
+                //Add Clients for each  KC relm
+                addAllClients(r.getRealm());
+
+                boolean exists = false;
+                for (Tenant t : repository.findAll()) {
+                    if (t.getName().equals(r.getRealm()))
+                        exists = true;
+                }
+                if (exists)
+                    continue;
+                else {
+                    Tenant newTenant = new Tenant(r.getRealm());
+                    repository.save(newTenant);
+                }
             }
         }
-        for(RealmRepresentation r:keycloak.realms().findAll()){
-            if(r.getRealm().equals("master"))
-                continue;
-            //Add Clients for each  KC relm
-            addAllClients(r.getRealm());
-
-            boolean exists=false;
-            for(Tenant t:repository.findAll()){
-                if(t.getName().equals(r.getRealm()))
-                    exists=true;
-            }
-            if(exists)
-                continue;
-            else{
-                Tenant newTenant=new Tenant(r.getRealm());
-                repository.save(newTenant);
-            }
+        catch(Exception e){
+            System.out.println("Cannot init tenants KC is offline..");
+            return;
         }
-
     }
 
     /**

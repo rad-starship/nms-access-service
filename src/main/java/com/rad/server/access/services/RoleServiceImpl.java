@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.ProcessingException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -82,12 +83,13 @@ public class RoleServiceImpl implements RoleService {
      */
     @Override
     public void initRole(Role role) {
+        System.out.println("Init Role.");
         Role r =roleRepository.save(role);
         try{
             addAllKeycloakRole(role);
         }
         catch(Exception e){
-            System.out.println(e.getMessage());
+            throw e;
         }
 
     }
@@ -234,8 +236,13 @@ public class RoleServiceImpl implements RoleService {
      */
     public void addAllKeycloakRole(Role role) {
 
-        for (Tenant t:tenantRepository.findAll()) {
-            addRoleToTenant(role, t.getName());
+        try {
+            for (Tenant t : tenantRepository.findAll()) {
+                addRoleToTenant(role, t.getName());
+            }
+        }
+        catch (Exception e){
+            throw e;
         }
 
     }
@@ -258,8 +265,11 @@ public class RoleServiceImpl implements RoleService {
                 realmResource.roles().get(role.getName()).addComposites(permissions);
             }
         }
+        catch (ProcessingException e){
+            throw e;
+        }
         catch (Exception e){
-
+            e.printStackTrace();
         }
     }
 

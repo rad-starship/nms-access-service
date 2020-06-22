@@ -24,14 +24,16 @@ import java.util.Map;
 @Service
 public class SettingsServiceImpl implements SettingsService {
 
+    private final boolean isOnline = true;
+
     @Autowired
     private KeycloakAdminProperties prop;
     
     @Autowired
     private TenantRepository repository;
 
-    @Autowired
-    Settings settings;
+//    @Autowired
+//    Settings settings;
 
 
 
@@ -47,7 +49,7 @@ public class SettingsServiceImpl implements SettingsService {
     }
 
     public Settings getSettings(){
-        return settings;
+        return null;
     }
 
     /**
@@ -250,46 +252,48 @@ public class SettingsServiceImpl implements SettingsService {
     @Override
     public Settings getFromEs() {
         Settings result = null;
-        try {
-            EsConnectionHandler.makeConnection();
-            Map<String, Object> data = EsConnectionHandler.loadSettings();
-            if (data != null)
-                result = parseSettings(data);
+        if(isOnline) {
+            try {
+                EsConnectionHandler.makeConnection();
+                Map<String, Object> data = EsConnectionHandler.loadSettings();
+                if (data != null)
+                    result = parseSettings(data);
 
-            EsConnectionHandler.closeConnection();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-        catch(Exception e){
-           e.printStackTrace();
+                EsConnectionHandler.closeConnection();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
         return result;
     }
 
     @Override
     public void saveToEs(Settings tmpSettings) {
-        try {
-            EsConnectionHandler.makeConnection();
-            EsConnectionHandler.saveSettings(tmpSettings);
-            EsConnectionHandler.closeConnection();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
+        if(isOnline) {
+            try {
+                EsConnectionHandler.makeConnection();
+                EsConnectionHandler.saveSettings(tmpSettings);
+                EsConnectionHandler.closeConnection();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     @Override
     public void updateES(Settings settings1) {
-        try {
-            EsConnectionHandler.makeConnection();
-            EsConnectionHandler.deleteSettings();
-            EsConnectionHandler.saveSettings(settings1);
-            EsConnectionHandler.closeConnection();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+        if (isOnline) {
+            try {
+                EsConnectionHandler.makeConnection();
+                EsConnectionHandler.deleteSettings();
+                EsConnectionHandler.saveSettings(settings1);
+                EsConnectionHandler.closeConnection();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
+        }
     }
 }

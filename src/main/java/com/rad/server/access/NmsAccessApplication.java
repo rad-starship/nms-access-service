@@ -16,6 +16,7 @@ import com.rad.server.access.services.TenantService;
 
 import com.rad.server.access.services.RoleService;
 import com.rad.server.access.services.UserService;
+import org.apache.http.impl.nio.reactor.ExceptionEvent;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
@@ -177,6 +178,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 				repository.save(t);
 			});
 			repository.findAll().forEach(System.out::println);
+
 			tenantService.initKeycloakTenants(repository);
 		};
 	}
@@ -189,41 +191,44 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	CommandLineRunner roleInit(RoleRepository repository, RoleService roleService)
 	{
 		return args -> {
-       //First init the permissions
+			try {
+				//First init the permissions
+				System.out.println("*** BEGIN ROLE INIT ***");
+				Stream.of("all", "user_write", "user_read", "role_write", "role_read", "tenant_write", "tenant_read", "corona_read").forEach(name -> {
+					Role t = new Role(name);
+					roleService.initRole(t);
+				});// to talk to amir about that
+				//Now create the default roles
+				Role admin = new Role("Admin");
+				List<String> adminPermission = new LinkedList<>();
+				adminPermission.add("all");
+				admin.addPermission(adminPermission);
+				roleService.initRole(admin);
 
-            Stream.of("all","user_write","user_read","role_write","role_read","tenant_write","tenant_read","corona_read").forEach(name -> {
-                Role t = new Role(name);
-                roleService.initRole(t);
-            });// to talk to amir about that
-            //Now create the default roles
-			Role admin = new Role("Admin");
-			List<String> adminPermission = new LinkedList<>();
-			adminPermission.add("all");
-			admin.addPermission(adminPermission);
-			roleService.initRole(admin);
+				Role regionAdmin = new Role("Region-Admin");
+				List<String> rAdminPermission = new LinkedList<>();
+				rAdminPermission.add("user_write");
+				rAdminPermission.add("user_read");
+				rAdminPermission.add("role_write");
+				rAdminPermission.add("role_read");
+				rAdminPermission.add("tenant_read");
+				rAdminPermission.add("corona_read");
+				regionAdmin.addPermission(rAdminPermission);
+				roleService.initRole(regionAdmin);
 
-            Role regionAdmin = new Role("Region-Admin");
-            List<String> rAdminPermission = new LinkedList<>();
-            rAdminPermission.add("user_write");
-            rAdminPermission.add("user_read");
-            rAdminPermission.add("role_write");
-            rAdminPermission.add("role_read");
-            rAdminPermission.add("tenant_read");
-            rAdminPermission.add("corona_read");
-            regionAdmin.addPermission(rAdminPermission);
-            roleService.initRole(regionAdmin);
-
-            Role user = new Role("User");
-            List<String> userPermission = new LinkedList<>();
-            userPermission.add("corona_read");
-            userPermission.add("user_read");
-            user.addPermission(userPermission);
-            roleService.initRole(user);
+				Role user = new Role("User");
+				List<String> userPermission = new LinkedList<>();
+				userPermission.add("corona_read");
+				userPermission.add("user_read");
+				user.addPermission(userPermission);
+				roleService.initRole(user);
 
 
-
-
-            repository.findAll().forEach(System.out::println);
+				repository.findAll().forEach(System.out::println);
+			}
+			catch(Exception e){
+				System.out.println("Role init Failed.");
+			}
 		};
 	}
 
@@ -234,134 +239,140 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	CommandLineRunner userInit(UserRepository userRepository,UserService userService)
 	{
 		return args -> {
-			Stream.of("all","americaUser","europeUser","asiaUser","africaUser","euroAsiaUser","americaAfricaUser").forEach(name -> {
-				User user;
-				ArrayList<String> realms=new ArrayList<>();
-				ArrayList<Long> tenants=new ArrayList<>();
-				if(name.equals("americaUser")) {
-					tenants.add(2L);
-					realms.add("America");
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name, "u12", 17, tenants);
-					userService.addKeycloakUser(user,realms,"User");
-					user.encodePassword(user.getPassword());
-				}
-				else if(name.equals("europeUser")) {
-					tenants.add(3L);
-					realms.add("Europe");
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"u12", 17, tenants);
-					userService.addKeycloakUser(user,realms,"User");
-					user.encodePassword(user.getPassword());
-				}
-				else if(name.equals("asiaUser")) {
-					tenants.add(4L);
-					realms.add("Asia");
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"u12", 17, tenants);
-					userService.addKeycloakUser(user,realms,"User");
-					user.encodePassword(user.getPassword());
-				}
-				else if(name.equals("africaUser")){
-					tenants.add(5L);
-					realms.add("Africa");
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"u12", 17, tenants);
-					userService.addKeycloakUser(user,realms,"User");
-					user.encodePassword(user.getPassword());
-				}
-				else if(name.equals("all")){
-					tenants.add(6L);
-					realms.add("All");
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"u12", 17, tenants);
-					userService.addKeycloakUser(user,realms,"User");
-					user.encodePassword(user.getPassword());
-				}
-				else if(name.equals("euroAsiaUser")){
-					tenants.add(3L);
-					tenants.add(4L);
-					realms.add("Europe");
-					realms.add("Asia");
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"u12", 17, tenants);
-					userService.addKeycloakUser(user,realms,"User");
-					user.encodePassword(user.getPassword());
-				}
-				else{
-					tenants.add(2L);
-					tenants.add(5L);
-					realms.add("America");
-					realms.add("Africa");
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"u12", 17, tenants);
-					userService.addKeycloakUser(user,realms,"User");
-					user.encodePassword(user.getPassword());
-				}
-				userRepository.save(user);
+			try {
+				Stream.of("all", "americaUser", "europeUser", "asiaUser", "africaUser", "euroAsiaUser", "americaAfricaUser").forEach(name -> {
+					User user;
+					ArrayList<String> realms = new ArrayList<>();
+					ArrayList<Long> tenants = new ArrayList<>();
+					if (name.equals("americaUser")) {
+						tenants.add(2L);
+						realms.add("America");
+						user = new User(name, name, name.toLowerCase() + "@domain.com", name, "u12", 17, tenants);
+						userService.addKeycloakUser(user, realms, "User");
+						user.encodePassword(user.getPassword());
+					} else if (name.equals("europeUser")) {
+						tenants.add(3L);
+						realms.add("Europe");
+						user = new User(name, name, name.toLowerCase() + "@domain.com", name, "u12", 17, tenants);
+						userService.addKeycloakUser(user, realms, "User");
+						user.encodePassword(user.getPassword());
+					} else if (name.equals("asiaUser")) {
+						tenants.add(4L);
+						realms.add("Asia");
+						user = new User(name, name, name.toLowerCase() + "@domain.com", name, "u12", 17, tenants);
+						userService.addKeycloakUser(user, realms, "User");
+						user.encodePassword(user.getPassword());
+					} else if (name.equals("africaUser")) {
+						tenants.add(5L);
+						realms.add("Africa");
+						user = new User(name, name, name.toLowerCase() + "@domain.com", name, "u12", 17, tenants);
+						userService.addKeycloakUser(user, realms, "User");
+						user.encodePassword(user.getPassword());
+					} else if (name.equals("all")) {
+						tenants.add(6L);
+						realms.add("All");
+						user = new User(name, name, name.toLowerCase() + "@domain.com", name, "u12", 17, tenants);
+						userService.addKeycloakUser(user, realms, "User");
+						user.encodePassword(user.getPassword());
+					} else if (name.equals("euroAsiaUser")) {
+						tenants.add(3L);
+						tenants.add(4L);
+						realms.add("Europe");
+						realms.add("Asia");
+						user = new User(name, name, name.toLowerCase() + "@domain.com", name, "u12", 17, tenants);
+						userService.addKeycloakUser(user, realms, "User");
+						user.encodePassword(user.getPassword());
+					} else {
+						tenants.add(2L);
+						tenants.add(5L);
+						realms.add("America");
+						realms.add("Africa");
+						user = new User(name, name, name.toLowerCase() + "@domain.com", name, "u12", 17, tenants);
+						userService.addKeycloakUser(user, realms, "User");
+						user.encodePassword(user.getPassword());
+					}
+					userRepository.save(user);
 
-			});
-			userRepository.findAll().forEach(System.out::println);
-		};
+				});
+				userRepository.findAll().forEach(System.out::println);
+			}
+			catch(Exception e){
+				System.out.println("Error on users init");
+			}
+			};
 	}
 
 	@Bean
 	CommandLineRunner adminInit(UserRepository userRepository, UserService userService)
 	{
 		return args -> {
+		try {
 			Stream.of("Admin").forEach(name -> {
-				ArrayList<String> realms=new ArrayList<>();
-				ArrayList<Long> tenants=new ArrayList<>();
+				ArrayList<String> realms = new ArrayList<>();
+				ArrayList<Long> tenants = new ArrayList<>();
 				tenants.add(1L);
 				realms.add("Admin");
-				User user = new User(name,name,name.toLowerCase() + "@domain.com","admin","admin",15,tenants);
-				userService.addKeycloakUser(user,realms,"Admin");
+				User user = new User(name, name, name.toLowerCase() + "@domain.com", "admin", "admin", 15, tenants);
+				userService.addKeycloakUser(user, realms, "Admin");
 				user.encodePassword(user.getPassword());
 				userRepository.save(user);
 			});
 			userRepository.findAll().forEach(System.out::println);
+		}
+						catch(Exception e) {
+							System.out.println("Error on Admin init");
+						}
 		};
 	}
 	@Bean
 	CommandLineRunner regionAdminInit(UserRepository userRepository, UserService userService)
 	{
 		return args -> {
-			Stream.of("americaAdmin","europeAdmin","asiaAdmin","africaAdmin").forEach(name -> {
-				User user;
-				ArrayList<String> realms=new ArrayList<>();
-				ArrayList<Long> tenants=new ArrayList<>();
+			try {
+				Stream.of("americaAdmin", "europeAdmin", "asiaAdmin", "africaAdmin").forEach(name -> {
+					User user;
+					ArrayList<String> realms = new ArrayList<>();
+					ArrayList<Long> tenants = new ArrayList<>();
 
-				if(name.contains("america")) {
-					tenants.add(2L);
-					realms.add("America");
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"a12", 16, tenants);
-					userService.addKeycloakUser(user,realms,"Region-Admin");
-					user.encodePassword(user.getPassword());
-				}
-				else if(name.contains("europe")) {
-					tenants.add(3L);
-					realms.add("Europe");
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"a12", 16, tenants);
-					userService.addKeycloakUser(user,realms,"Region-Admin");
-					user.encodePassword(user.getPassword());
-				}
-				else if(name.contains("asia")) {
-					tenants.add(4L);
-					realms.add("Asia");
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"a12", 16, tenants);
-					userService.addKeycloakUser(user,realms,"Region-Admin");
-					user.encodePassword(user.getPassword());
-				}
-				else {
-					tenants.add(5L);
-					realms.add("Africa");
-					user = new User(name, name, name.toLowerCase() + "@domain.com", name,"a12", 16, tenants);
-					userService.addKeycloakUser(user,realms,"Region-Admin");
-					user.encodePassword(user.getPassword());
-				}
-				userRepository.save(user);
-			});
-			userRepository.findAll().forEach(System.out::println);
-			Thread initThread=new Thread(){
-				public void run(){
-					userService.initKeycloakUsers(userRepository);
-				}
-			};
-			initThread.start();
-			settingsService.applySettings(initSettings);
+					if (name.contains("america")) {
+						tenants.add(2L);
+						realms.add("America");
+						user = new User(name, name, name.toLowerCase() + "@domain.com", name, "a12", 16, tenants);
+						userService.addKeycloakUser(user, realms, "Region-Admin");
+						user.encodePassword(user.getPassword());
+					} else if (name.contains("europe")) {
+						tenants.add(3L);
+						realms.add("Europe");
+						user = new User(name, name, name.toLowerCase() + "@domain.com", name, "a12", 16, tenants);
+						userService.addKeycloakUser(user, realms, "Region-Admin");
+						user.encodePassword(user.getPassword());
+					} else if (name.contains("asia")) {
+						tenants.add(4L);
+						realms.add("Asia");
+						user = new User(name, name, name.toLowerCase() + "@domain.com", name, "a12", 16, tenants);
+						userService.addKeycloakUser(user, realms, "Region-Admin");
+						user.encodePassword(user.getPassword());
+					} else {
+						tenants.add(5L);
+						realms.add("Africa");
+						user = new User(name, name, name.toLowerCase() + "@domain.com", name, "a12", 16, tenants);
+						userService.addKeycloakUser(user, realms, "Region-Admin");
+						user.encodePassword(user.getPassword());
+					}
+					userRepository.save(user);
+				});
+				userRepository.findAll().forEach(System.out::println);
+				Thread initThread = new Thread() {
+					public void run() {
+						userService.initKeycloakUsers(userRepository);
+					}
+				};
+				initThread.start();
+				settingsService.applySettings(initSettings);
+			}
+			catch(Exception e){
+				System.out.println("Error on RegionAdmin init");
+			}
 		};
 	}
 
