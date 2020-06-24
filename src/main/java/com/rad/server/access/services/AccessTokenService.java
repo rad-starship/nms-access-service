@@ -8,7 +8,11 @@ import com.rad.server.access.entities.User;
 import com.rad.server.access.repositories.UserRepository;
 import com.rad.server.access.responses.HttpResponse;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.representations.AccessToken;
+import org.keycloak.representations.account.SessionRepresentation;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.UserSessionRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.oauth2.provider.token.ConsumerTokenServices;
@@ -24,6 +28,7 @@ import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
 import java.security.Key;
 import java.util.HashSet;
+import java.util.List;
 
 @Service
 public class AccessTokenService {
@@ -144,7 +149,7 @@ public class AccessTokenService {
            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(requestParams, headers);
 
            String realm = getRealmFromToken();
-           String url = prop.getServerUrl()+"/auth/realms/" + getRealmFromToken() + "/protocol/openid-connect/logout";
+           String url = prop.getServerUrl()+"/realms/" + getRealmFromToken() + "/protocol/openid-connect/logout";
            return new RestTemplate().postForEntity(url, request, Object.class);
            // got response 204, no content
        }
@@ -166,6 +171,16 @@ public class AccessTokenService {
 
     }
 
+    private Keycloak getKeycloak() {
+        return Keycloak.getInstance(
+
+                prop.getServerUrl(),// keycloak address
+                prop.getRelm(), // ​​specify Realm master
+                prop.getUsername(), // ​​administrator account
+                prop.getPassword(), // ​​administrator password
+                prop.getCliendId());
+    }
+
     public boolean isInBlackList(HttpHeaders headers){
         return tokenBlackList.contains(headers.get("Authorization").get(0));
     }
@@ -180,5 +195,14 @@ public class AccessTokenService {
                 return user;
         }
         return null;
+    }
+
+    public Object getSessions() {
+        Keycloak keycloak = getKeycloak();
+       List<ClientRepresentation> clientRepresentations=keycloak.realm(getRealmFromToken()).clients().findByClientId(clientId);
+        ClientRepresentation representation=clientRepresentations.get(0);
+        ClientResource resource=keycloak.realm(getRealmFromToken()).clients().get(representation.getId());
+        List<UserSessionRepresentation> sessions = resource.getUserSessions(0,1000);
+        return sessions;
     }
 }

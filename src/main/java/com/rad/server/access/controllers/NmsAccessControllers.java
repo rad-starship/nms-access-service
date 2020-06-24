@@ -350,7 +350,7 @@ public class NmsAccessControllers
 
 
     //***********************************************************************
-    //                          LOGIN/LOGOUT APIs
+    //                          Management APIs
     //***********************************************************************
 
     @PostMapping("/getToken")
@@ -362,26 +362,34 @@ public class NmsAccessControllers
 
     static class LogoutRequest
     {
-    	String refreshToken;
+    	String refresh;
     	public LogoutRequest()
     	{
     		
     	}
-		public String getRefreshToken()
-		{
-			return this.refreshToken;
+
+		public String getRefresh() {
+			return refresh;
 		}
-		public void setRefreshToken(String refreshToken)
-		{
-			this.refreshToken = refreshToken;
+
+		public void setRefresh(String refresh) {
+			this.refresh = refresh;
 		}
-    }
+	}
     
 	@PostMapping("/logout")
 	@ResponseBody
 	public Object logout(@RequestBody LogoutRequest logoutRequest,@RequestHeader HttpHeaders headers){
 		accessTokenService.addToBlackList(headers.get("Authorization").get(0));
-		return accessTokenService.logout(logoutRequest.refreshToken);
+		return accessTokenService.logout(logoutRequest.getRefresh());
+	}
+
+	@GetMapping("/sessions")
+	@ResponseBody
+	public Object getSessions(@RequestHeader HttpHeaders headers){
+		if(accessTokenService.isInBlackList(headers))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+		return accessTokenService.getSessions();
 	}
 
 

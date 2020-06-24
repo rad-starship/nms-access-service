@@ -269,7 +269,7 @@ public class RoleServiceImpl implements RoleService {
             throw e;
         }
         catch (Exception e){
-            e.printStackTrace();
+
         }
     }
 
