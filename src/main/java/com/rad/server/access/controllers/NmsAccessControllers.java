@@ -335,6 +335,7 @@ public class NmsAccessControllers
 			System.out.println(settings);
 
 			Settings settings1 = settingsService.parseSettings(settings);
+			this.settings=settings1;
 			System.out.println(settings1.getJson());
 			settingsService.applySettings(settings1);
 
@@ -343,7 +344,7 @@ public class NmsAccessControllers
 			return settings;
 		}
 		catch(Exception e){
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"Settings values must be above 0").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,e.getMessage()).getHttpResponse();
 		}
 
     }

@@ -132,6 +132,9 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 		{
 			e.printStackTrace();
 		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
 	}
 
 	@KafkaListener(topics = "events", groupId = "rad")

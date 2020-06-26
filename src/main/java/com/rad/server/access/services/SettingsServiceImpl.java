@@ -71,8 +71,14 @@ public class SettingsServiceImpl implements SettingsService {
                 Map<String, Object> tokenMap = (Map<String, Object>) authenticationMap.get("token");
                 if (tokenMap != null) {
                     token = new Token((int) tokenMap.get("ssoSessionIdle"), (int) tokenMap.get("ssoSessionMax"), (int) tokenMap.get("offlineSessionIdle"), (int) tokenMap.get("accessTokenLifespan"));
-                    if(token.getSsoSessionIdle()<=0 ||token.getSsoSessionMax()<=0||token.getOfflineSessionIdle()<=0||token.getAccessTokenLifespan()<=0)
-                        throw new Exception();
+                    if(token.getSsoSessionIdle()<=0 )
+                        throw new Exception("Token SSO Session idle must be above 0");
+                    if(token.getSsoSessionMax()<=0)
+                        throw new Exception("Token SSO Session max must be above 0");
+                    if(token.getOfflineSessionIdle()<=0)
+                        throw new Exception("Token offline Session idle must be above 0");
+                    if(token.getAccessTokenLifespan()<=0)
+                        throw new Exception("Token access token lifespan must be above 0");
                 } else {
                     token = null;
                 }
@@ -84,21 +90,25 @@ public class SettingsServiceImpl implements SettingsService {
                             (int) passwordMap.get("notRecentlyUsed"),
                             (int) passwordMap.get("digits"),
                             (boolean) passwordMap.get("notUsername"));
-                    if(passwordPolicy.getMinimumLength()<=0 ||passwordPolicy.getNotRecentlyUsed()<=0||passwordPolicy.getDigits()<=0)
-                        throw new Exception();
+                    if(passwordPolicy.getMinimumLength()<=0 )
+                        throw new Exception("Password minimum length must be above 0");
+                    if(passwordPolicy.getNotRecentlyUsed()<=0)
+                        throw new Exception("Password not recently used must be above 0");
                 } else {
                     passwordPolicy = null;
                 }
 
                 Map<String, Object> otpMap = (Map<String, Object>) authenticationMap.get("otpPolicy");
-                if (otpMap != null) {
+                    if (otpMap != null) {
                     otpPolicy = new otpPolicy((boolean) otpMap.get("enabled"),
                             (String) otpMap.get("optType"),
                             (int) otpMap.get("numberOfDigits"),
                             (int) otpMap.get("optTokenPeriod")
                     );
-                    if(otpPolicy.getOptTokenPeriod()<=0 ||otpPolicy.getNumberOfDigits()<=0)
-                        throw new Exception();
+                    if(otpPolicy.getOptTokenPeriod()<=0)
+                        throw new Exception("OTP policy token period must be above 0");
+                    if(otpPolicy.getNumberOfDigits()<=0)
+                        throw new Exception("OTP policy number of digits must be above 0");
                 } else {
                     otpPolicy = null;
                 }
@@ -122,12 +132,12 @@ public class SettingsServiceImpl implements SettingsService {
                 autorization = null;
             }
             if (map.get("events") != null)
-                events = Boolean.valueOf((String) map.get("events"));
+                events = Boolean.parseBoolean((String) map.get("events"));
             else
                 events = true;
 
             if (map.get("isOnline") != null)
-                isOnline = Boolean.valueOf((String) map.get("isOnline"));
+                isOnline = Boolean.parseBoolean((String) map.get("isOnline"));
             else
                 isOnline = true;
 
