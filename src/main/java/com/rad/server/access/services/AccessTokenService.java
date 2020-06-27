@@ -3,8 +3,10 @@ package com.rad.server.access.services;
 //using example from https://gist.github.com/thomasdarimont/52152ed68486c65b50a04fcf7bd9bbde
 
 import com.rad.server.access.componenets.KeycloakAdminProperties;
+import com.rad.server.access.entities.Event;
 import com.rad.server.access.entities.LoginEntity;
 import com.rad.server.access.entities.User;
+import com.rad.server.access.presistance.EsConnectionHandler;
 import com.rad.server.access.repositories.UserRepository;
 import com.rad.server.access.responses.HttpResponse;
 import org.keycloak.admin.client.Keycloak;
@@ -26,7 +28,9 @@ import org.springframework.web.client.RestTemplate;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
+import java.io.IOException;
 import java.security.Key;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
@@ -204,5 +208,18 @@ public class AccessTokenService {
         ClientResource resource=keycloak.realm(getRealmFromToken()).clients().get(representation.getId());
         List<UserSessionRepresentation> sessions = resource.getUserSessions(0,1000);
         return sessions;
+    }
+
+    public Object getEvents() {
+        List<Event> events = new ArrayList<>();
+        try {
+            EsConnectionHandler.makeConnection();
+            events =EsConnectionHandler.loadEventsByTenant(getRealmFromToken());
+            EsConnectionHandler.closeConnection();
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
+        return events;
+
     }
 }

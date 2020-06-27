@@ -2,6 +2,7 @@ package com.rad.server.access.presistance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rad.server.access.componenets.EsProperties;
+import com.rad.server.access.entities.Event;
 import com.rad.server.access.entities.settings.Settings;
 import org.apache.http.HttpHost;
 import org.elasticsearch.ElasticsearchException;
@@ -10,6 +11,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -22,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class EsConnectionHandler {
     @Autowired
@@ -36,6 +39,7 @@ public class EsConnectionHandler {
     private static ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String SETTINGS_INDEX = "settings";
+    private static final String EVENTS_INDEX = "events";
 
 
 
@@ -58,16 +62,7 @@ public class EsConnectionHandler {
     public static Settings saveSettings(Settings data){
         String dataMap = null;
         dataMap = data.toJson();
-        IndexRequest indexRequest = new IndexRequest(SETTINGS_INDEX);
-        indexRequest.source(dataMap, XContentType.JSON);
-        try {
-            IndexResponse response = restHighLevelClient.index(indexRequest, RequestOptions.DEFAULT);
-            System.out.println(response.toString());
-        } catch(ElasticsearchException e) {
-            e.getDetailedMessage();
-        } catch (java.io.IOException ex){
-            ex.getLocalizedMessage();
-        }
+        saveOnEs(dataMap, SETTINGS_INDEX);
         return data;
     }
 
@@ -109,5 +104,70 @@ public class EsConnectionHandler {
 
 
 
+    }
+
+    public static void saveEvent(String eventAsString) {
+        saveOnEs(eventAsString, EVENTS_INDEX);
+
+
+    }
+
+    private static void saveOnEs(String objAsString, String index) {
+        IndexRequest indexRequest = new IndexRequest(index);
+        indexRequest.source(objAsString, XContentType.JSON);
+        try {
+            IndexResponse response = restHighLevelClient.index(indexRequest, RequestOptions.DEFAULT);
+            System.out.println(response.toString());
+        } catch(ElasticsearchException e) {
+            e.getDetailedMessage();
+        } catch (IOException ex){
+            ex.getLocalizedMessage();
+        }
+    }
+
+    public static List<Event> loadEventsByTenant(String tenant) {
+        SearchSourceBuilder builder = new SearchSourceBuilder().size(1000)
+                .query(QueryBuilders.boolQuery()
+                        .must(QueryBuilders
+                                .matchQuery("tenant",tenant)));
+
+        SearchRequest searchRequest = new SearchRequest(EVENTS_INDEX);
+        searchRequest.searchType(SearchType.DFS_QUERY_THEN_FETCH);
+        searchRequest.source(builder);
+        SearchResponse response = null;
+        try {
+            response = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        catch (ElasticsearchException e){
+            e.getDetailedMessage();
+            return new ArrayList<>();
+        }
+        SearchHit[] searchHits = response.getHits().getHits();
+        List<Event> results =
+                Arrays.stream(searchHits)
+                        .map(hit -> {
+                            try {
+                                Map<String,Object> map = hit.getSourceAsMap();
+                                //TODO:not elegant but working..
+                                return  new Event(
+                                        (String)map.get("clientId"),
+                                        (String)map.get("time"),
+                                        (String)map.get("tenant"),
+                                        (String)map.get("type"),
+                                        (String)map.get("error"),
+                                        (String)map.get("ip"),
+                                        (String)map.get("details")
+
+                                );
+                 //               return objectMapper.readValue(hit.getSourceAsString(),Event.class);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                return null;
+                            }
+                        })
+                        .collect(Collectors.toList());
+        return results;
     }
 }

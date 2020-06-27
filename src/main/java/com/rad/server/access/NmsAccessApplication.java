@@ -7,10 +7,12 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.*;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rad.server.access.adapters.MultitenantConfiguration;
 import com.rad.server.access.componenets.KeycloakAdminProperties;
 import com.rad.server.access.entities.settings.*;
+import com.rad.server.access.presistance.EsConnectionHandler;
 import com.rad.server.access.services.SettingsService;
 import com.rad.server.access.services.TenantService;
 
@@ -22,7 +24,6 @@ import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
-import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProviderFactory;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.idm.EventRepresentation;
@@ -113,14 +114,21 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 						List<EventRepresentation> eventList=realm.getEvents();
 						realm.clearEvents();
 						for(EventRepresentation event:eventList){
-							List<String> details=new ArrayList<>();
-							details.add(event.getClientId());
-							details.add(tenant.getName());
-							details.add(event.getType());
-							details.add(event.getError());
-							details.add(event.getIpAddress());
-							details.add(event.getDetails().toString());
-							kafkaTemplate.send("events",details.toString());
+
+							Event e = new Event(event.getClientId(),
+									String.valueOf(event.getTime()),
+									tenant.getName(),
+									event.getType(),
+									event.getError()==null?"null":event.getError(),
+									event.getIpAddress(),
+									event.getDetails().toString());
+							String test="";
+							try {
+								test =new ObjectMapper().writeValueAsString(e);
+							} catch (JsonProcessingException jsonProcessingException) {
+								jsonProcessingException.printStackTrace();
+							}
+							kafkaTemplate.send("events",test);
 						}
 					}
 				}
@@ -140,6 +148,14 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	@KafkaListener(topics = "events", groupId = "rad")
 	public void listen(String message) {
 		LOG.info("Received message in rad group: {}", message);
+		try {
+			EsConnectionHandler.makeConnection();
+			EsConnectionHandler.saveEvent(message);
+			EsConnectionHandler.closeConnection();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		LOG.info("Saved Event to ES");
 	}
 
 

@@ -402,6 +402,14 @@ public class NmsAccessControllers
 		return accessTokenService.getSessions();
 	}
 
+	@GetMapping("/events")
+	@ResponseBody
+	public Object getEvents(@RequestHeader HttpHeaders headers){
+		if(accessTokenService.isInBlackList(headers))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+		return accessTokenService.getEvents();
+	}
+
 
 
 
