@@ -45,7 +45,9 @@ public class EsConnectionHandler {
     private static final String BLACKLIST_INDEX = "blacklist";
 
 
-
+    //***********************************************************************
+    //                          Connection finctions
+    //***********************************************************************
     public static synchronized RestHighLevelClient makeConnection() {
         //System.out.println("************\n\n\n HOST= "+HOST + "PORT = "+PORT_ONE+"\n\n\n\n************");
         if(restHighLevelClient == null) {
@@ -61,7 +63,9 @@ public class EsConnectionHandler {
         restHighLevelClient.close();
         restHighLevelClient = null;
     }
-
+    //***********************************************************************
+    //                          Settings APIs
+    //***********************************************************************
     public static Settings saveSettings(Settings data){
         String dataMap = null;
         dataMap = data.toJson();
@@ -100,23 +104,14 @@ public class EsConnectionHandler {
 
     }
 
+
+    //***********************************************************************
+    //                          Events APIs
+    //***********************************************************************
     public static void saveEvent(String eventAsString) {
         saveOnEs(eventAsString, EVENTS_INDEX);
 
 
-    }
-
-    private static void saveOnEs(String objAsString, String index) {
-        IndexRequest indexRequest = new IndexRequest(index);
-        indexRequest.source(objAsString, XContentType.JSON);
-        try {
-            IndexResponse response = restHighLevelClient.index(indexRequest, RequestOptions.DEFAULT);
-            System.out.println(response.toString());
-        } catch(ElasticsearchException e) {
-            System.out.println(e.getDetailedMessage());
-        } catch (IOException ex){
-            ex.getLocalizedMessage();
-        }
     }
 
     public static List<Event> loadEventsByTenant(String tenant) {
@@ -155,7 +150,7 @@ public class EsConnectionHandler {
                                         (String)map.get("details")
 
                                 );
-                 //               return objectMapper.readValue(hit.getSourceAsString(),Event.class);
+                                //               return objectMapper.readValue(hit.getSourceAsString(),Event.class);
                             } catch (Exception e) {
                                 e.printStackTrace();
                                 return null;
@@ -165,22 +160,10 @@ public class EsConnectionHandler {
         return results;
     }
 
-    public static void deleteList() {
-        deleteFromEs(BLACKLIST_INDEX);
-    }
 
-    private static void deleteFromEs(String index) {
-        DeleteIndexRequest request = new DeleteIndexRequest(index);
-        try {
-            restHighLevelClient.indices().delete(request, RequestOptions.DEFAULT);
-        } catch (ElasticsearchException exception) {
-            if (exception.status() == RestStatus.NOT_FOUND) {
-                System.out.println("NotFound Settings");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+    //***********************************************************************
+    //                          BlackLists APIs
+    //***********************************************************************
 
     public static void saveToken(SToken tokenBlackList) {
         String dataMap = null;
@@ -191,6 +174,10 @@ public class EsConnectionHandler {
         }
         saveOnEs(dataMap, BLACKLIST_INDEX);
 
+    }
+
+    public static void deleteList() {
+        deleteFromEs(BLACKLIST_INDEX);
     }
 
     public static Set<SToken> loadBlacklist(){
@@ -230,4 +217,35 @@ public class EsConnectionHandler {
 
 
     }
+
+
+    //***********************************************************************
+    //                          General Functions
+    //***********************************************************************
+    private static void saveOnEs(String objAsString, String index) {
+        IndexRequest indexRequest = new IndexRequest(index);
+        indexRequest.source(objAsString, XContentType.JSON);
+        try {
+            IndexResponse response = restHighLevelClient.index(indexRequest, RequestOptions.DEFAULT);
+            System.out.println(response.toString());
+        } catch(ElasticsearchException e) {
+            System.out.println(e.getDetailedMessage());
+        } catch (IOException ex){
+            ex.getLocalizedMessage();
+        }
+    }
+    private static void deleteFromEs(String index) {
+        DeleteIndexRequest request = new DeleteIndexRequest(index);
+        try {
+            restHighLevelClient.indices().delete(request, RequestOptions.DEFAULT);
+        } catch (ElasticsearchException exception) {
+            if (exception.status() == RestStatus.NOT_FOUND) {
+                System.out.println("NotFound Settings");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    
 }
