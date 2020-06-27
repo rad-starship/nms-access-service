@@ -247,5 +247,5 @@ public class EsConnectionHandler {
         }
     }
 
-    
+
 }
