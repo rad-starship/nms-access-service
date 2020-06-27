@@ -1,8 +1,10 @@
 package com.rad.server.access.presistance;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rad.server.access.componenets.EsProperties;
 import com.rad.server.access.entities.Event;
+import com.rad.server.access.entities.SToken;
 import com.rad.server.access.entities.settings.Settings;
 import org.apache.http.HttpHost;
 import org.elasticsearch.ElasticsearchException;
@@ -40,6 +42,7 @@ public class EsConnectionHandler {
 
     private static final String SETTINGS_INDEX = "settings";
     private static final String EVENTS_INDEX = "events";
+    private static final String BLACKLIST_INDEX = "blacklist";
 
 
 
@@ -67,16 +70,7 @@ public class EsConnectionHandler {
     }
 
     public static void deleteSettings(){
-        DeleteIndexRequest request = new DeleteIndexRequest(SETTINGS_INDEX);
-        try {
-            restHighLevelClient.indices().delete(request, RequestOptions.DEFAULT);
-        } catch (ElasticsearchException exception) {
-            if (exception.status() == RestStatus.NOT_FOUND) {
-                System.out.println("NotFound Settings");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        deleteFromEs(SETTINGS_INDEX);
 
     }
 
@@ -119,7 +113,7 @@ public class EsConnectionHandler {
             IndexResponse response = restHighLevelClient.index(indexRequest, RequestOptions.DEFAULT);
             System.out.println(response.toString());
         } catch(ElasticsearchException e) {
-            e.getDetailedMessage();
+            System.out.println(e.getDetailedMessage());
         } catch (IOException ex){
             ex.getLocalizedMessage();
         }
@@ -169,5 +163,71 @@ public class EsConnectionHandler {
                         })
                         .collect(Collectors.toList());
         return results;
+    }
+
+    public static void deleteList() {
+        deleteFromEs(BLACKLIST_INDEX);
+    }
+
+    private static void deleteFromEs(String index) {
+        DeleteIndexRequest request = new DeleteIndexRequest(index);
+        try {
+            restHighLevelClient.indices().delete(request, RequestOptions.DEFAULT);
+        } catch (ElasticsearchException exception) {
+            if (exception.status() == RestStatus.NOT_FOUND) {
+                System.out.println("NotFound Settings");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void saveToken(SToken tokenBlackList) {
+        String dataMap = null;
+        try {
+            dataMap = objectMapper.writeValueAsString(tokenBlackList);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        saveOnEs(dataMap, BLACKLIST_INDEX);
+
+    }
+
+    public static Set<SToken> loadBlacklist(){
+        SearchRequest searchRequest = new SearchRequest(BLACKLIST_INDEX);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+        searchRequest.source(searchSourceBuilder);
+        SearchResponse response = null;
+        try {
+            response = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        catch (ElasticsearchException e){
+            e.getDetailedMessage();
+            return null;
+        }
+        SearchHit[] searchHits = response.getHits().getHits();
+        if(searchHits.length > 0){
+            Set<SToken> results =
+                    Arrays.stream(searchHits)
+                            .map(hit -> {
+                                try {
+                                    Map<String,Object> map = hit.getSourceAsMap();
+                                    return new SToken(map.get("token"));
+                                    //return objectMapper.readValue(hit.getSourceAsString(),SToken.class);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    return null;
+                                }
+                            })
+                            .collect(Collectors.toSet());
+            return results;
+        }
+        else
+            return null;
+
+
     }
 }

@@ -13,11 +13,8 @@ import com.rad.server.access.adapters.MultitenantConfiguration;
 import com.rad.server.access.componenets.KeycloakAdminProperties;
 import com.rad.server.access.entities.settings.*;
 import com.rad.server.access.presistance.EsConnectionHandler;
-import com.rad.server.access.services.SettingsService;
-import com.rad.server.access.services.TenantService;
+import com.rad.server.access.services.*;
 
-import com.rad.server.access.services.RoleService;
-import com.rad.server.access.services.UserService;
 import org.apache.http.impl.nio.reactor.ExceptionEvent;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
@@ -68,6 +65,9 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 
     @Autowired
 	private SettingsService settingsService;
+
+    @Autowired
+	private AccessTokenService atService;
 
 	@Autowired
 	private KeycloakAdminProperties prop;
@@ -162,6 +162,21 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	@Bean
 	HashSet<String> tokenBlackListInit(){
 		return new HashSet<>();
+//		HashSet<String> result = new HashSet<>();
+//		Set<SToken> list = null;
+//		try {
+//			EsConnectionHandler.makeConnection();
+//			list = EsConnectionHandler.loadBlacklist();
+//			EsConnectionHandler.closeConnection();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//
+//		if(list!=null){
+//			for(SToken token:list)
+//				result.add(token.getToken());
+//		}
+//		return result;
 	}
 
 	@Bean
@@ -393,6 +408,27 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 				System.out.println("Error on RegionAdmin init");
 			}
 		};
+	}
+
+	@Bean
+	CommandLineRunner blackListInit(){
+		return (args -> {
+			HashSet<String> result = new HashSet<>();
+		Set<SToken> list = null;
+		try {
+			EsConnectionHandler.makeConnection();
+			list = EsConnectionHandler.loadBlacklist();
+			EsConnectionHandler.closeConnection();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		if(list!=null){
+			for(SToken token:list)
+				result.add(token.getToken());
+		}
+		atService.setBlackList(result);
+		});
 	}
 
 

@@ -5,6 +5,7 @@ package com.rad.server.access.services;
 import com.rad.server.access.componenets.KeycloakAdminProperties;
 import com.rad.server.access.entities.Event;
 import com.rad.server.access.entities.LoginEntity;
+import com.rad.server.access.entities.SToken;
 import com.rad.server.access.entities.User;
 import com.rad.server.access.presistance.EsConnectionHandler;
 import com.rad.server.access.repositories.UserRepository;
@@ -191,6 +192,17 @@ public class AccessTokenService {
 
     public void addToBlackList(String token){
         tokenBlackList.add(token);
+        updateEsBlackList(token);
+    }
+
+    private void updateEsBlackList(String token) {
+        try {
+            EsConnectionHandler.makeConnection();
+            EsConnectionHandler.saveToken(new SToken(token));
+            EsConnectionHandler.closeConnection();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public User getUserFromToken(String username){
@@ -221,5 +233,9 @@ public class AccessTokenService {
         }
         return events;
 
+    }
+
+    public void setBlackList(HashSet<String> result) {
+        tokenBlackList = result;
     }
 }
