@@ -49,7 +49,7 @@ public class Authentication {
         this.socialLogin = socialLogin;
     }
 
-    public String getJson(){
+    public String toJson(){
         boolean first = true;
         ObjectMapper mapper = new ObjectMapper();
         String output = "{";

@@ -57,7 +57,7 @@ public class EsConnectionHandler {
 
     public static Settings saveSettings(Settings data){
         String dataMap = null;
-        dataMap = data.getJson();
+        dataMap = data.toJson();
         IndexRequest indexRequest = new IndexRequest(SETTINGS_INDEX);
         indexRequest.source(dataMap, XContentType.JSON);
         try {

@@ -325,6 +325,15 @@ public class NmsAccessControllers
 		return settings;
 	}
 
+	@GetMapping("/settings/isOnline")
+	@ResponseBody
+	public Object isOnline(@RequestHeader HttpHeaders headers)
+	{
+		if(accessTokenService.isInBlackList(headers))
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+		return settings.isOnline();
+	}
+
 
 	@PostMapping("/settings")
     @ResponseBody
@@ -336,7 +345,7 @@ public class NmsAccessControllers
 
 			Settings settings1 = settingsService.parseSettings(settings);
 			this.settings=settings1;
-			System.out.println(settings1.getJson());
+			System.out.println(settings1.toJson());
 			settingsService.applySettings(settings1);
 
 			settingsService.updateES(settings1);

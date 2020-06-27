@@ -45,7 +45,7 @@ public class Settings {
         isOnline = online;
     }
 
-    public String getJson(){
+    public String toJson(){
         boolean first = true;
         String output = "{";
         if(authentication!=null){
@@ -54,7 +54,7 @@ public class Settings {
             } else {
                 output += ",";
             }
-            output += "\"authentication\":"+authentication.getJson();
+            output += "\"authentication\":"+authentication.toJson();
         }
         if(authorization!=null){
             if (first) {
@@ -62,7 +62,7 @@ public class Settings {
             } else {
                 output += ",";
             }
-            output += "\"authorization\":"+authorization.getJson();
+            output += "\"authorization\":"+authorization.toJson();
         }
 
         if (first) {
@@ -71,6 +71,8 @@ public class Settings {
             output += ",";
         }
         output+="\"events\":\""+isEvents()+"\"";
+
+        output+="\"isOnline\":\""+isOnline()+"\"";
 
         output+="}";
         return output;
