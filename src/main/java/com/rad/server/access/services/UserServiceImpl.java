@@ -48,10 +48,10 @@ public class UserServiceImpl implements UserService {
     AccessTokenService accessTokenService;
 
 
-
-
-
-
+    /**
+     * This function returns a keycloak instance to work with and manipulate
+     * @return
+     */
     private Keycloak getKeycloakInstance(){
         return Keycloak.getInstance(
 
@@ -63,11 +63,22 @@ public class UserServiceImpl implements UserService {
     }
 
 
+    /**
+     * This function returns all the users
+     * @return
+     */
+
     public List<User> getUsers(){
         List<User> users =(List<User>) userRepository.findAll();
         System.out.println("getUsers: " + users);
         return users;
     }
+
+    /**
+     * This function gets user by id
+     * @param id id of the user to get
+     * @return
+     */
 
     public Object getUser(long id){
         User user=getUserFromRepository(id);
@@ -75,6 +86,12 @@ public class UserServiceImpl implements UserService {
             return new HttpResponse(HttpStatus.BAD_REQUEST,"User doesnt exist").getHttpResponse();
         return user;
     }
+
+    /**
+     * This function adds a new user to keycloak and the repository
+     * @param user the new user to add
+     * @return
+     */
 
     public Object addUser(User user) {
         try {
@@ -131,6 +148,13 @@ public class UserServiceImpl implements UserService {
     }
     }
 
+    /**
+     * This function updates an existing user in the keycloak and in the repository
+     * @param id id of the user to update
+     * @param user the user new details
+     * @return
+     */
+
     public ResponseEntity<?> updateUser(long id,User user){
         User oldUser=getUserFromRepository(id);
         if(!isTokenUserFromSameTenant(oldUser))
@@ -159,7 +183,11 @@ public class UserServiceImpl implements UserService {
         return new HttpResponse(result).getHttpResponse();
     }
 
-
+    /**
+     * This function returns all the continent of a user
+     * @param username the username of the wanted user
+     * @return
+     */
     public Object getContinentsByToken(String username){
         User tokenUser=accessTokenService.getUserFromToken(username);
         ArrayList<String> tenants=new ArrayList<>();

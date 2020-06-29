@@ -145,6 +145,11 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 		}
 	}
 
+	/**
+	 * This function listens to kafka messages and sends them to elastic search for storing
+	 * @param message
+	 */
+
 	@KafkaListener(topics = "events", groupId = "rad")
 	public void listen(String message) {
 		LOG.info("Received message in rad group: {}", message);
@@ -159,6 +164,10 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	}
 
 
+	/**
+	 * 	This function creates a new token blacklist to use in the rest of the app
+	 * @return
+	 */
 	@Bean
 	HashSet<String> tokenBlackListInit(){
 		return new HashSet<>();
@@ -178,6 +187,11 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 //		}
 //		return result;
 	}
+
+	/**
+	 * This function initializes the settings from the elastic search
+	 * @return
+	 */
 
 	@Bean
 	Settings settingsInit(){

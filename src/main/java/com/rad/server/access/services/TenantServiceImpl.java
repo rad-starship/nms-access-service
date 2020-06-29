@@ -109,6 +109,13 @@ public class TenantServiceImpl implements TenantService {
         }
     }
 
+    /**
+     * This function adds a new identity provider to keycloak
+     * @param providerID the provider id
+     * @param secret the identity provider secret
+     * @param clientID the identity provider client id
+     * @param realm the realm to add the identity provider to
+     */
     @Override
     public void addIdentityProvider(String providerID,String secret,String clientID,String realm){
         Keycloak keycloak=getKeycloakInstance();
@@ -325,6 +332,12 @@ public class TenantServiceImpl implements TenantService {
         Optional<Role> roleExists = roleRepository.findById(id);
         return roleExists.orElse(null);
     }
+
+    /**
+     * This function returns a user instance by getting a username and search it in the repository
+     * @param username the username of the wanted user to return
+     * @return
+     */
 
     private User getUserFromToken(String username){
         for (User user: userRepository.findAll()) {
