@@ -134,7 +134,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 				}
 			};
 
-			timer.schedule (t, 0l, 1000*60*20);
+			timer.schedule (t, 0L, 1000*60);
 		}
 		catch (UnknownHostException e)
 		{

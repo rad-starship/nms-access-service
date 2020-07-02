@@ -57,7 +57,7 @@ public class NmsAccessControllers
 	public Object getUsers(@RequestHeader HttpHeaders headers)
 	{
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		return userService.getUsers();
 	}
 
@@ -66,7 +66,7 @@ public class NmsAccessControllers
 	public Object getUsers(@RequestHeader HttpHeaders headers,@PathVariable long id)
 	{
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		return userService.getUser(id);
 	}
 
@@ -81,7 +81,7 @@ public class NmsAccessControllers
 	public Object getContinentsByToken(@RequestHeader HttpHeaders headers,@PathVariable String username)
 	{
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		return userService.getContinentsByToken(username);
 	}
 
@@ -95,7 +95,7 @@ public class NmsAccessControllers
 	public Object addUser(@RequestBody User user,@RequestHeader HttpHeaders headers)
 	{
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		return userService.addUser(user);
 	}
 
@@ -108,7 +108,7 @@ public class NmsAccessControllers
 	@ResponseBody
 	public ResponseEntity<?> deleteUser(@PathVariable long id,@RequestHeader HttpHeaders headers) {
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		return userService.deleteKeycloakUser(id);
 	}
 
@@ -121,7 +121,7 @@ public class NmsAccessControllers
 	@PutMapping("/users/{id}")
 	public ResponseEntity<?> updateUser(@PathVariable long id,@RequestBody User user,@RequestHeader HttpHeaders headers){
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		return userService.updateUser(id,user);
 	}
 
@@ -134,7 +134,7 @@ public class NmsAccessControllers
 	public Object getRoles(@RequestHeader HttpHeaders headers)
 	{
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		//List<Role> roles = (List<Role>) roleRepository.findAll();
 		List<Role> roles = roleService.getRoles();
 		System.out.println("getRoles: " + roles);
@@ -154,7 +154,7 @@ public class NmsAccessControllers
 	{
 	    try {
 			if(accessTokenService.isInBlackList(headers))
-				return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+				return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
             System.out.println("addRole: " + role);
             //roleRepository.save(role);
             roleService.addRole(role);
@@ -177,7 +177,7 @@ public class NmsAccessControllers
 												   @Valid @RequestBody Role roleDetails,@RequestHeader HttpHeaders headers) {
 		try {
 			if(accessTokenService.isInBlackList(headers))
-				return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+				return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 			return roleService.updateRole(roleId, roleDetails);
 		}
 			catch(Exception e){
@@ -197,7 +197,7 @@ public class NmsAccessControllers
 	System.out.println("DeleteRole: " + roleName);
 	try {
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		if(roleName.equals("Admin")){
 			return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
 		}
@@ -225,7 +225,7 @@ public class NmsAccessControllers
 		System.out.println("DeleteRole: " + roleId);
 		try {
 			if(accessTokenService.isInBlackList(headers))
-				return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+				return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 			if(roleRepository.existsById(roleId)){
 				if(roleRepository.findById(roleId).get().getName().equals("Admin"))
 					return new HttpResponse(HttpStatus.BAD_REQUEST,"cannot delete Admin").getHttpResponse();
@@ -249,7 +249,7 @@ public class NmsAccessControllers
 	@ResponseBody
 	public Object getPermissions(@RequestHeader HttpHeaders headers){
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		List<Map<String,String>> permissions = roleService.getPermissions();
 		return permissions;
 	}
@@ -262,7 +262,7 @@ public class NmsAccessControllers
 	public Object getTenants(@RequestHeader HttpHeaders headers)
 	{
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		return tenantService.getTenants();
 	}
 
@@ -277,7 +277,7 @@ public class NmsAccessControllers
 	public Object addTenant(@RequestBody Tenant tenant,@RequestHeader HttpHeaders headers)
 	{
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		return tenantService.addKeycloakTenant(tenant);
 
 	}
@@ -292,7 +292,7 @@ public class NmsAccessControllers
 	@ResponseBody
 	public Object deleteTenant(@PathVariable long id,@RequestHeader HttpHeaders headers){
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		return tenantService.deleteKeycloakTenant(id);
 	}
 
@@ -307,7 +307,7 @@ public class NmsAccessControllers
 	@ResponseBody
 	public Object updateTenant(@PathVariable long id,@RequestBody Tenant tenant,@RequestHeader HttpHeaders headers){
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		return tenantService.updateKeycloakTenant(tenant,id);
 	}
 
@@ -321,7 +321,7 @@ public class NmsAccessControllers
 	public Object getSettings(@RequestHeader HttpHeaders headers)
 	{
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		return settings;
 	}
 
@@ -330,7 +330,7 @@ public class NmsAccessControllers
 	public Object isOnline(@RequestHeader HttpHeaders headers)
 	{
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		return settings.isOnline();
 	}
 
@@ -339,7 +339,7 @@ public class NmsAccessControllers
     @ResponseBody
     public Object postSettings(@RequestBody Object settings,@RequestHeader HttpHeaders headers){
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		try {
 			System.out.println(settings);
 
@@ -398,7 +398,7 @@ public class NmsAccessControllers
 	@ResponseBody
 	public Object getSessions(@RequestHeader HttpHeaders headers){
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		return accessTokenService.getSessions();
 	}
 
@@ -406,7 +406,7 @@ public class NmsAccessControllers
 	@ResponseBody
 	public Object getEvents(@RequestHeader HttpHeaders headers){
 		if(accessTokenService.isInBlackList(headers))
-			return new HttpResponse(HttpStatus.BAD_REQUEST,"You need to login first").getHttpResponse();
+			return new HttpResponse(HttpStatus.BAD_REQUEST,"Token is inactive").getHttpResponse();
 		return accessTokenService.getEvents();
 	}
 
