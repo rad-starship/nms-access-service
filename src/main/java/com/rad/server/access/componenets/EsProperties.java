@@ -8,7 +8,8 @@ import org.springframework.stereotype.Component;
 public class EsProperties {
 
     private String url;
-    private String port;
+    private int port;
+    private String scheme;
 
     public String getUrl() {
         return url;
@@ -18,11 +19,19 @@ public class EsProperties {
         this.url = url;
     }
 
-    public String getPort() {
+    public int getPort() {
         return port;
     }
 
-    public void setPort(String port) {
+    public void setPort(int port) {
         this.port = port;
+    }
+
+    public String getScheme() {
+        return scheme;
+    }
+
+    public void setScheme(String scheme) {
+        this.scheme = scheme;
     }
 }

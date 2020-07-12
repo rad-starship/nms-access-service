@@ -73,6 +73,9 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	private KeycloakAdminProperties prop;
 
 	@Autowired
+	private EsConnectionHandler esConnectionHandler;
+
+	@Autowired
 	private TenantRepository tenantRepository;
 
     private Settings initSettings;
@@ -154,9 +157,9 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	public void listen(String message) {
 		LOG.info("Received message in rad group: {}", message);
 		try {
-			EsConnectionHandler.makeConnection();
-			EsConnectionHandler.saveEvent(message);
-			EsConnectionHandler.closeConnection();
+			esConnectionHandler.makeConnection();
+			esConnectionHandler.saveEvent(message);
+			esConnectionHandler.closeConnection();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -430,9 +433,9 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 			HashSet<String> result = new HashSet<>();
 		Set<SToken> list = null;
 		try {
-			EsConnectionHandler.makeConnection();
-			list = EsConnectionHandler.loadBlacklist();
-			EsConnectionHandler.closeConnection();
+			esConnectionHandler.makeConnection();
+			list = esConnectionHandler.loadBlacklist();
+			esConnectionHandler.closeConnection();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
