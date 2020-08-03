@@ -38,7 +38,7 @@ public class NmsAccessControllers
 	@Autowired
     private SettingsService settingsService;
 
-	@Autowiredr
+	@Autowired
 	private AccessTokenService accessTokenService;
 
 	@Autowired
