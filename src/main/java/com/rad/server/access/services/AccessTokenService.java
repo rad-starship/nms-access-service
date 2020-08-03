@@ -43,6 +43,9 @@ public class AccessTokenService {
     private KeycloakAdminProperties prop;
 
     @Autowired
+    private EsConnectionHandler esConnectionHandler;
+
+    @Autowired
     private AccessToken token;
 
     @Autowired
@@ -197,9 +200,9 @@ public class AccessTokenService {
 
     private void updateEsBlackList(String token) {
         try {
-            EsConnectionHandler.makeConnection();
-            EsConnectionHandler.saveToken(new SToken(token));
-            EsConnectionHandler.closeConnection();
+            esConnectionHandler.makeConnection();
+            esConnectionHandler.saveToken(new SToken(token));
+            esConnectionHandler.closeConnection();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -225,9 +228,9 @@ public class AccessTokenService {
     public Object getEvents() {
         List<Event> events = new ArrayList<>();
         try {
-            EsConnectionHandler.makeConnection();
-            events =EsConnectionHandler.loadEventsByTenant(getRealmFromToken());
-            EsConnectionHandler.closeConnection();
+            esConnectionHandler.makeConnection();
+            events =esConnectionHandler.loadEventsByTenant(getRealmFromToken());
+            esConnectionHandler.closeConnection();
         }catch (IOException e) {
             e.printStackTrace();
         }

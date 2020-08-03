@@ -32,6 +32,9 @@ public class SettingsServiceImpl implements SettingsService {
     @Autowired
     private TenantRepository repository;
 
+    @Autowired
+    private EsConnectionHandler esConnectionHandler;
+
 
 
 
@@ -260,12 +263,12 @@ public class SettingsServiceImpl implements SettingsService {
         Settings result = null;
         if(isOnline) {
             try {
-                EsConnectionHandler.makeConnection();
-                Map<String, Object> data = EsConnectionHandler.loadSettings();
+                esConnectionHandler.makeConnection();
+                Map<String, Object> data = esConnectionHandler.loadSettings();
                 if (data != null)
                     result = parseSettings(data);
 
-                EsConnectionHandler.closeConnection();
+                esConnectionHandler.closeConnection();
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (Exception e) {
@@ -279,9 +282,9 @@ public class SettingsServiceImpl implements SettingsService {
     public void saveToEs(Settings tmpSettings) {
         if(isOnline) {
             try {
-                EsConnectionHandler.makeConnection();
-                EsConnectionHandler.saveSettings(tmpSettings);
-                EsConnectionHandler.closeConnection();
+                esConnectionHandler.makeConnection();
+                esConnectionHandler.saveSettings(tmpSettings);
+                esConnectionHandler.closeConnection();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -292,10 +295,10 @@ public class SettingsServiceImpl implements SettingsService {
     public void updateES(Settings settings1) {
         if (isOnline) {
             try {
-                EsConnectionHandler.makeConnection();
-                EsConnectionHandler.deleteSettings();
-                EsConnectionHandler.saveSettings(settings1);
-                EsConnectionHandler.closeConnection();
+                esConnectionHandler.makeConnection();
+                esConnectionHandler.deleteSettings();
+                esConnectionHandler.saveSettings(settings1);
+                esConnectionHandler.closeConnection();
             } catch (IOException e) {
                 e.printStackTrace();
             }

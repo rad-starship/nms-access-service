@@ -23,62 +23,64 @@ import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Component
 public class EsConnectionHandler {
     @Autowired
-    private static EsProperties prop;
+    private  EsProperties prop;
 
     //The config parameters for the connection
-    private static final String HOST = "localhost";
-    private static final int PORT_ONE = 9200;
-    private static final String SCHEME = "http";
+//    private  final String HOST = "localhost";
+//    private  final int PORT_ONE = 9200;
+//    private  final String SCHEME = "http";
 
-    private static RestHighLevelClient restHighLevelClient;
-    private static ObjectMapper objectMapper = new ObjectMapper();
+    private  RestHighLevelClient restHighLevelClient;
+    private  ObjectMapper objectMapper = new ObjectMapper();
 
-    private static final String SETTINGS_INDEX = "settings";
-    private static final String EVENTS_INDEX = "events";
-    private static final String BLACKLIST_INDEX = "blacklist";
+    private final String SETTINGS_INDEX = "settings";
+    private  final String EVENTS_INDEX = "events";
+    private  final String BLACKLIST_INDEX = "blacklist";
 
 
     //***********************************************************************
     //                          Connection finctions
     //***********************************************************************
-    public static synchronized RestHighLevelClient makeConnection() {
+    public  synchronized RestHighLevelClient makeConnection() {
         //System.out.println("************\n\n\n HOST= "+HOST + "PORT = "+PORT_ONE+"\n\n\n\n************");
         if(restHighLevelClient == null) {
             restHighLevelClient = new RestHighLevelClient(
                     RestClient.builder(
-                            new HttpHost(HOST, PORT_ONE, SCHEME)));
+                            new HttpHost(prop.getUrl(), prop.getPort(), prop.getScheme())));
         }
 
         return restHighLevelClient;
     }
 
-    public static synchronized void closeConnection() throws IOException {
+    public  synchronized void closeConnection() throws IOException {
         restHighLevelClient.close();
         restHighLevelClient = null;
     }
     //***********************************************************************
     //                          Settings APIs
     //***********************************************************************
-    public static Settings saveSettings(Settings data){
+    public  Settings saveSettings(Settings data){
         String dataMap = null;
         dataMap = data.toJson();
         saveOnEs(dataMap, SETTINGS_INDEX);
         return data;
     }
 
-    public static void deleteSettings(){
+    public  void deleteSettings(){
         deleteFromEs(SETTINGS_INDEX);
 
     }
 
-    public static Map<String, Object> loadSettings(){
+    public  Map<String, Object> loadSettings(){
         SearchRequest searchRequest = new SearchRequest(SETTINGS_INDEX);
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(QueryBuilders.matchAllQuery());
@@ -108,13 +110,13 @@ public class EsConnectionHandler {
     //***********************************************************************
     //                          Events APIs
     //***********************************************************************
-    public static void saveEvent(String eventAsString) {
+    public  void saveEvent(String eventAsString) {
         saveOnEs(eventAsString, EVENTS_INDEX);
 
 
     }
 
-    public static List<Event> loadEventsByTenant(String tenant) {
+    public  List<Event> loadEventsByTenant(String tenant) {
         SearchSourceBuilder builder = new SearchSourceBuilder().size(1000)
                 .query(QueryBuilders.boolQuery()
                         .must(QueryBuilders
@@ -165,7 +167,7 @@ public class EsConnectionHandler {
     //                          BlackLists APIs
     //***********************************************************************
 
-    public static void saveToken(SToken tokenBlackList) {
+    public  void saveToken(SToken tokenBlackList) {
         String dataMap = null;
         try {
             dataMap = objectMapper.writeValueAsString(tokenBlackList);
@@ -176,11 +178,11 @@ public class EsConnectionHandler {
 
     }
 
-    public static void deleteList() {
+    public  void deleteList() {
         deleteFromEs(BLACKLIST_INDEX);
     }
 
-    public static Set<SToken> loadBlacklist(){
+    public  Set<SToken> loadBlacklist(){
         SearchRequest searchRequest = new SearchRequest(BLACKLIST_INDEX);
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(QueryBuilders.matchAllQuery());
@@ -222,7 +224,7 @@ public class EsConnectionHandler {
     //***********************************************************************
     //                          General Functions
     //***********************************************************************
-    private static void saveOnEs(String objAsString, String index) {
+    private  void saveOnEs(String objAsString, String index) {
         IndexRequest indexRequest = new IndexRequest(index);
         indexRequest.source(objAsString, XContentType.JSON);
         try {
@@ -234,7 +236,7 @@ public class EsConnectionHandler {
             ex.getLocalizedMessage();
         }
     }
-    private static void deleteFromEs(String index) {
+    private  void deleteFromEs(String index) {
         DeleteIndexRequest request = new DeleteIndexRequest(index);
         try {
             restHighLevelClient.indices().delete(request, RequestOptions.DEFAULT);
