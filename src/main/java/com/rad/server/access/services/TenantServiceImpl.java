@@ -101,7 +101,7 @@ public class TenantServiceImpl implements TenantService {
             addAllClients(tenant.getName());
             if (otpPolicy.isEnabled())
                 setOTP(tenant.getName());
-
+            settingsService.applySettings(settings);
             return tenant;
         }
         catch (Exception e){
