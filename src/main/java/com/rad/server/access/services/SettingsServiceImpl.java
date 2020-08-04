@@ -9,6 +9,7 @@ import com.rad.server.access.responses.HttpResponse;
 import org.apache.tomcat.util.json.JSONParser;
 import org.apache.tomcat.util.json.ParseException;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -135,12 +136,12 @@ public class SettingsServiceImpl implements SettingsService {
                 autorization = null;
             }
             if (map.get("events") != null)
-                events = Boolean.parseBoolean((String) map.get("events"));
+                events = (Boolean)map.get("events");
             else
                 events = true;
 
             if (map.get("isOnline") != null)
-                isOnline = Boolean.parseBoolean((String) map.get("isOnline"));
+                isOnline = (Boolean)map.get("isOnline");
             else
                 isOnline = true;
 
@@ -227,7 +228,7 @@ public class SettingsServiceImpl implements SettingsService {
         Keycloak keycloak = getKeycloakInstance();
 
         for(Tenant tenant: repository.findAll()){
-            
+            RealmResource resource = keycloak.realm(tenant.getName());
             RealmRepresentation realmRepresentation =keycloak.realm(tenant.getName()).toRepresentation();
             realmRepresentation.setPasswordPolicy(password);
             keycloak.realm(tenant.getName()).update(realmRepresentation);
