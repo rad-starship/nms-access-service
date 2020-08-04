@@ -12,7 +12,11 @@ import org.apache.commons.codec.binary.Base64;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.AccessToken;
-import org.keycloak.representations.idm.*;
+
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -325,6 +329,7 @@ public class UserServiceImpl implements UserService {
         Keycloak keycloak=getKeycloakInstance();
         RealmsResource realms=keycloak.realms();
         List<RealmRepresentation> existingRealms=realms.findAll();
+
         for(RealmRepresentation r:existingRealms){
             if(r.getRealm().equals("master"))
                 continue;

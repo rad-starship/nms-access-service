@@ -70,9 +70,9 @@ public class Settings {
         } else {
             output += ",";
         }
-        output+="\"events\":\""+isEvents()+"\"";
+        output+="\"events\":"+isEvents()+",";
 
-        output+="\"isOnline\":\""+isOnline()+"\"";
+        output+="\"isOnline\":"+isOnline()+"";
 
         output+="}";
         return output;

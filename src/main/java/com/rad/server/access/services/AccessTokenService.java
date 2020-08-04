@@ -3,11 +3,9 @@ package com.rad.server.access.services;
 //using example from https://gist.github.com/thomasdarimont/52152ed68486c65b50a04fcf7bd9bbde
 
 import com.rad.server.access.componenets.KeycloakAdminProperties;
-import com.rad.server.access.entities.Event;
-import com.rad.server.access.entities.LoginEntity;
-import com.rad.server.access.entities.SToken;
-import com.rad.server.access.entities.User;
+import com.rad.server.access.entities.*;
 import com.rad.server.access.presistance.EsConnectionHandler;
+import com.rad.server.access.repositories.TenantRepository;
 import com.rad.server.access.repositories.UserRepository;
 import com.rad.server.access.responses.HttpResponse;
 import org.keycloak.admin.client.Keycloak;
@@ -53,6 +51,9 @@ public class AccessTokenService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private TenantRepository tenantRepository;
 
 
     /**
@@ -218,18 +219,23 @@ public class AccessTokenService {
 
     public Object getSessions() {
         Keycloak keycloak = getKeycloak();
-       List<ClientRepresentation> clientRepresentations=keycloak.realm(getRealmFromToken()).clients().findByClientId(clientId);
-        ClientRepresentation representation=clientRepresentations.get(0);
-        ClientResource resource=keycloak.realm(getRealmFromToken()).clients().get(representation.getId());
-        List<UserSessionRepresentation> sessions = resource.getUserSessions(0,1000);
-        return sessions;
+        List<UserSessionRepresentation> output = new ArrayList<>();
+        for(Tenant t :tenantRepository.findAll()) {
+            List<ClientRepresentation> clientRepresentations = keycloak.realm(t.getName()).clients().findByClientId(clientId);
+            ClientRepresentation representation = clientRepresentations.get(0);
+            ClientResource resource = keycloak.realm(t.getName()).clients().get(representation.getId());
+            output.addAll( resource.getUserSessions(0, 1000));
+        }
+        return output;
     }
 
     public Object getEvents() {
         List<Event> events = new ArrayList<>();
         try {
             esConnectionHandler.makeConnection();
-            events =esConnectionHandler.loadEventsByTenant(getRealmFromToken());
+            for(Tenant t : tenantRepository.findAll()) {
+                events.addAll(esConnectionHandler.loadEventsByTenant(t.getName()));
+            }
             esConnectionHandler.closeConnection();
         }catch (IOException e) {
             e.printStackTrace();

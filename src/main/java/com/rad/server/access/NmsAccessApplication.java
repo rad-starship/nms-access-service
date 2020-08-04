@@ -200,7 +200,7 @@ public class NmsAccessApplication implements ApplicationListener<ApplicationRead
 	Settings settingsInit(){
 			Settings tmpSettings = settingsService.getFromEs();
 //		Settings tmpSettings = null;
-			if(tmpSettings == null) {
+		if(tmpSettings == null) {
 				Autorization autorization = new Autorization();
 				Token token = new Token(30, 600, 1500, 20);
 				PasswordPolicy passwordPolicy = new PasswordPolicy(365, 8, 3, 1, true);
