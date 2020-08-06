@@ -114,15 +114,7 @@ public class UserServiceImpl implements UserService {
                 Role role = roleRepository.findById(user.getRoleID()).get();
                 User exists = getUserFromRepositoryByUsername(user.getUserName());
                 if (exists != null) {
-                    if (exists.getTenantsID().containsAll(user.getTenantsID()))
                         throw new InstanceAlreadyExistsException();
-                    else {
-                        user.setId(exists.getId());
-                        for (long id : exists.getTenantsID()) {
-                            if (!user.getTenantsID().contains(id))
-                                user.getTenantsID().add(id);
-                        }
-                    }
                 }
                 int response = addKeycloakUser(user, realms, role.getName());
                 if (response == 409)
