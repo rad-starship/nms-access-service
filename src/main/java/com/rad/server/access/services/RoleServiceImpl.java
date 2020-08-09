@@ -116,8 +116,9 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public void addRole(Role role) throws Exception {
         if(!haveInRepo(role)){
-
-                addRoleToTenant(role,getRealmFromToken());
+            for(Tenant t:tenantRepository.findAll()) {
+                addRoleToTenant(role, t.getName());
+            }
                 roleRepository.save(role);
 
 
@@ -252,7 +253,7 @@ public class RoleServiceImpl implements RoleService {
      * @param role - the role to add.
      * @param tenant - the realm name.
      */
-    private void addRoleToTenant(Role role, String tenant) {
+    public void addRoleToTenant(Role role, String tenant) {
         Keycloak keycloak = getKeycloak();
         RealmResource realmResource = keycloak.realm(tenant);
         RoleRepresentation newRole = new RoleRepresentation();
@@ -297,20 +298,21 @@ public class RoleServiceImpl implements RoleService {
      */
     private void updateKeycloakRole(Role role,Role update) {
         Keycloak keycloak = getKeycloak();
-        RealmResource relamResource = keycloak.realm(getRealmFromToken());
-        RolesResource roles =  relamResource.roles();
-        RoleResource beforeRole  = roles.get(role.getName());
-        RoleRepresentation newRep = new RoleRepresentation();
-        newRep.setName(update.getName());
-        newRep.setComposite(true);
+        for(Tenant t:tenantRepository.findAll()) {
+            RealmResource relamResource = keycloak.realm(t.getName());
+            RolesResource roles = relamResource.roles();
+            RoleResource beforeRole = roles.get(role.getName());
+            RoleRepresentation newRep = new RoleRepresentation();
+            newRep.setName(update.getName());
+            newRep.setComposite(true);
 
-        List<RoleRepresentation> oldComposites = new ArrayList<>(beforeRole.getRoleComposites());
-        List<RoleRepresentation> newComposites = getPermissions(update.getPermissions(),getRealmFromToken());
-        if(!oldComposites.isEmpty())
-            beforeRole.deleteComposites(oldComposites);
-        beforeRole.addComposites(newComposites);
-        beforeRole.update(newRep);
-
+            List<RoleRepresentation> oldComposites = new ArrayList<>(beforeRole.getRoleComposites());
+            List<RoleRepresentation> newComposites = getPermissions(update.getPermissions(), t.getName());
+            if (!oldComposites.isEmpty())
+                beforeRole.deleteComposites(oldComposites);
+            beforeRole.addComposites(newComposites);
+            beforeRole.update(newRep);
+        }
 
 
 
@@ -322,8 +324,10 @@ public class RoleServiceImpl implements RoleService {
      */
     private void deleteKeycloakRole(Role role) {
         Keycloak keycloak = getKeycloak();
-        RealmResource realmResource = keycloak.realm(getRealmFromToken());
-        realmResource.roles().deleteRole(role.getName());
+        for(Tenant t:tenantRepository.findAll()) {
+            RealmResource realmResource = keycloak.realm(t.getName());
+            realmResource.roles().deleteRole(role.getName());
+        }
     }
 
 }

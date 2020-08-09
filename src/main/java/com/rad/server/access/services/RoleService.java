@@ -29,5 +29,7 @@ public interface RoleService
 
     Role updateRole(Long roleId, Role roleDetailes);
 
+    void addRoleToTenant(Role role, String tenant);
+
 
 }

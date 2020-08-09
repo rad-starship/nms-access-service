@@ -38,6 +38,9 @@ public class TenantServiceImpl implements TenantService {
     private  SettingsService settingsService;
 
     @Autowired
+    private RoleService roleService;
+
+    @Autowired
     private Settings settings;
 
     @Autowired
@@ -102,6 +105,9 @@ public class TenantServiceImpl implements TenantService {
             if (otpPolicy.isEnabled())
                 setOTP(tenant.getName());
             settingsService.applySettings(settings);
+            for(Role r:roleRepository.findAll()){
+                roleService.addRoleToTenant(r,tenant.getName());
+            }
             return tenant;
         }
         catch (Exception e){
