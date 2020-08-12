@@ -1,0 +1,111 @@
+:: ##############################################
+::         Spring Boot Kubernetes
+::         -----------------------
+:: (1) Create a Spring Boot Application
+:: (2) Containerize the Application
+:: (3) Deploy the application on Kubernetes
+:: ##############################################
+
+:: ######################################
+:: (1) Create a Spring Boot Application
+:: (1a) Compile and Build application
+echo off
+set JAVA_HOME=C:\Program Files\Java\jdk1.8.0_102
+mvn clean install package
+:: (1b) Test application is running (without docker container)
+java -jar target/nms-access-service-0.0.1-SNAPSHOT.jar
+
+:: ######################################
+:: Test Docker Engine is up and running
+:: ######################################
+docker system df
+::TYPE                TOTAL               ACTIVE              SIZE                RECLAIMABLE
+::Images              55                  11                  7.217GB             6.511GB (90%)
+::Containers          24                  23                  7.579kB             0B (0%)
+::Local Volumes       26                  0                   590MB               590MB (100%)
+::Build Cache         0                   0                   0B                  0B
+
+:: ######################################
+:: (2) Containerize the Application
+:: (2a) First create a Dockerfile
+:: FROM openjdk:8-jdk-alpine AS builder
+:: WORKDIR target/dependency
+:: ARG APPJAR=target/*.jar
+:: COPY ${APPJAR} app.jar
+:: RUN jar -xf ./app.jar
+:: 
+:: FROM openjdk:8-jre-alpine
+:: VOLUME /tmp
+:: ARG DEPENDENCY=target/dependency
+:: COPY --from=builder ${DEPENDENCY}/BOOT-INF/lib /app/lib
+:: COPY --from=builder ${DEPENDENCY}/META-INF /app/META-INF
+:: COPY --from=builder ${DEPENDENCY}/BOOT-INF/classes /app
+:: ENTRYPOINT ["java","-cp","app:app/lib/*","com.rad.server.access.NmsAccessApplication"]
+
+:: (2b) Docker Build
+:: Build new image from Dockerfile with tag with tag “nms-access-service:1.0” in the current directory
+docker image ls
+docker build --file nms-access-service-dockerfile -t rad-starship/nms-access-service:1.0 .
+
+:: (2c) You can run the container locally:
+docker container ls
+docker container run --publish 8081:8081 --detach --name nms-access-service rad-starship/nms-access-service:1.0
+
+:: (2d) and check that it works in another terminal:
+C:\docker\curl-7.68.0\bin\curl.exe -i http://localhost:8081/users
+ 
+:: (2e) Finish off by killing the container.
+docker container ls -a
+::CONTAINER ID        IMAGE                              COMMAND                  CREATED             STATUS                     PORTS                              NAMES
+::423cbb78ff42        rad-starship/nms-access-service    "java -cp app:app/li…"   4 weeks ago         Exited (143) 4 weeks ago                                      brave_pike
+::cfbd389bb146        rad-starship/health-data-service   "java -cp app:app/li…"   4 weeks ago         Exited (143) 4 weeks ago                                      sad_zhukovsky
+docker container stop 423cbb78ff42
+docker container rm -f 423cbb78ff42
+
+:: (2f) If you need - push the image to Dockerhub (you must be authenticated)
+:: Docker hub is the most popular public images registry. 
+:: In real life the image needs to be pushed to Dockerhub (or some other accessible repository)
+:: because Kubernetes pulls the image from inside its Kubelets (nodes), 
+:: which are not in general connected to the local docker daemon.
+docker login
+docker tag rad-starship/nms-access-service:1.0 razoz/nms-access-service:1.0
+docker push razoz/nms-access-service:1.0 
+
+:: ######################################
+:: Run external applications: keycloak, Kafka and Elasticsearch 
+:: ######################################
+
+docker run --name keycloak         -p 8080:8080 --detach -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin quay.io/keycloak/keycloak:9.0.3
+docker run --name elasticsearch    -p 9200:9200 -p 9300:9300 --detach -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.8.1
+
+docker network create kafka-net --driver bridge
+docker run --name zookeeper-server -p 2181:2181 --detach --network kafka-net -e ALLOW_ANONYMOUS_LOGIN=yes bitnami/zookeeper:latest -d 
+
+:: ######################################
+:: (3) deploying the application on Kubernetes
+
+:: (3a) Verify you can run kubectl commands from the shell:
+kubectl cluster-info
+kubectl get all
+
+:: (3b) ask kubectl to generate basic deployment YAML
+kubectl create deployment nms-access-service --image=razoz/nms-access-service:1.0 --dry-run -o=yaml > nms-access-service-deployment.yaml
+echo --- >> nms-access-service-deployment.yaml
+kubectl create service clusterip nms-access-service --tcp=8081:8081 --dry-run -o=yaml >> nms-access-service-deployment.yaml
+
+:: (3d) You can take the YAML generated above and edit it if you like, or you can just apply it:
+kubectl apply -f nms-access-service-deployment.yaml
+
+:: (4d) Check that the application is running
+:: Keep doing kubectl get all until the nms-access-service pod shows its status as "Running".
+kubectl get all
+
+:: (4e) Now you need to be able to connect to the application, 
+:: which you have exposed as a Service in Kubernetes. 
+:: One way to do that, which works great at development time, is to create an SSH tunnel:
+kubectl port-forward svc/nms-access-service 8081:8081
+:: then you can verify that the app is running in another terminal:
+C:\docker\curl-7.68.0\bin\curl.exe -i http://localhost:8081/users
+
+kubectl delete deployment nms-access-service
+kubectl delete service nms-access-service
